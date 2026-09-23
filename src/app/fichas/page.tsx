@@ -60,7 +60,7 @@ function CharacterList() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-extrabold">Fichas</h1>
-          <p className="text-dim">Seus personagens. Clique em um para editar.</p>
+          <p className="text-dim">Os heróis que você trouxe para a taverna. Toque em um para editar.</p>
         </div>
         <button className="btn btn-primary" onClick={create} disabled={creating}>
           {creating ? "Criando…" : "Criar personagem"}
@@ -72,16 +72,16 @@ function CharacterList() {
       {chars === null ? (
         <p className="mt-8 text-dim">Carregando fichas…</p>
       ) : chars.length === 0 ? (
-        <div className="graph-paper mt-8 rounded-lg border border-dashed border-module p-10 text-center">
-          <p className="font-display text-xl font-bold text-module-deep">Nenhum personagem ainda.</p>
-          <p className="mt-1 text-dim">Crie o primeiro para levá-lo às mesas.</p>
+        <div className="parchment-grid mt-8 rounded-lg border border-dashed border-brass-deep p-10 text-center">
+          <p className="font-display text-2xl font-bold text-ember-deep">Nenhum herói por aqui ainda.</p>
+          <p className="mt-1 text-dim">Toque em “Criar personagem” e dê um nome ao seu herói. O resto você preenche aos poucos.</p>
         </div>
       ) : (
-        <ul className="mt-8 divide-y divide-module-soft overflow-hidden rounded-lg border border-module-soft bg-white">
+        <ul className="mt-8 divide-y divide-rule overflow-hidden rounded-lg border border-rule bg-vellum">
           {chars.map((c) => (
             <li key={c.id} className="flex items-center gap-4 px-4 py-3 hover:bg-paper">
               <Link href={`/fichas/${c.id}`} className="flex min-w-0 flex-1 items-center gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-module font-display text-lg font-bold text-white">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ember font-display text-lg font-bold text-[#fbeed3] shadow-[inset_0_1px_0_rgb(255_220_180/0.35)]">
                   {c.level}
                 </span>
                 <span className="min-w-0">

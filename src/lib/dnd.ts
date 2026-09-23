@@ -1,17 +1,17 @@
 import type { Abilities, AbilityKey, Character, RollResult } from "./types";
 
-export const ABILITIES: { key: AbilityKey; label: string; short: string }[] = [
-  { key: "str", label: "Força", short: "For" },
-  { key: "dex", label: "Destreza", short: "Des" },
-  { key: "con", label: "Constituição", short: "Con" },
-  { key: "int", label: "Inteligência", short: "Int" },
-  { key: "wis", label: "Sabedoria", short: "Sab" },
-  { key: "cha", label: "Carisma", short: "Car" },
+export const ABILITIES: { key: AbilityKey; label: string; short: string; hint: string }[] = [
+  { key: "str", label: "Força", short: "For", hint: "Golpes, carregar peso" },
+  { key: "dex", label: "Destreza", short: "Des", hint: "Agilidade, arcos, furtividade" },
+  { key: "con", label: "Constituição", short: "Con", hint: "Vigor e pontos de vida" },
+  { key: "int", label: "Inteligência", short: "Int", hint: "Estudo, memória, magia arcana" },
+  { key: "wis", label: "Sabedoria", short: "Sab", hint: "Percepção e intuição" },
+  { key: "cha", label: "Carisma", short: "Car", hint: "Conversa, charme, liderança" },
 ];
 
 export const DEFAULT_ABILITIES: Abilities = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
 
-export const TOKEN_COLORS = ["#1d5fa8", "#a8321f", "#2f7d4a", "#7a4aa0", "#b7791f", "#2b6f7a", "#5b6778", "#172233"];
+export const TOKEN_COLORS = ["#a8431f", "#4c7a36", "#2f5d7c", "#7a4a8c", "#b8862c", "#5a3a24", "#8f2417", "#2a1c12"];
 
 export const modifier = (score: number) => Math.floor((score - 10) / 2);
 export const formatMod = (m: number) => (m >= 0 ? `+${m}` : `${m}`);

@@ -1,5 +1,5 @@
 -- =====================================================================
--- Tábula VTT — esquema do banco (Supabase)
+-- Taverna Inicial — esquema do banco (Supabase)
 -- Idempotente: pode rodar em um banco que já tem profiles, characters,
 -- rooms e tokens. Cria o que falta e adiciona colunas ausentes.
 -- Supabase → SQL Editor → cole tudo → Run

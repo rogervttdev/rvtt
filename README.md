@@ -1,4 +1,4 @@
-# Tábula — VTT minimalista de D&D
+# Taverna Inicial — VTT de D&D para iniciantes
 
 Next.js (App Router + Tailwind CSS v4) + Supabase (Auth, Database, Realtime).
 

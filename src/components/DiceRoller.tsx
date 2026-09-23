@@ -30,10 +30,10 @@ export function DiceRoller({ onRoll }: { onRoll: (r: RollResult) => void }) {
         ))}
       </div>
       <div className="grid grid-cols-2 gap-1">
-        <button className="btn btn-ghost border border-module-soft" onClick={() => roll("2d20kh1")}>
+        <button className="btn btn-ghost border border-rule" onClick={() => roll("2d20kh1")}>
           Vantagem
         </button>
-        <button className="btn btn-ghost border border-module-soft" onClick={() => roll("2d20kl1")}>
+        <button className="btn btn-ghost border border-rule" onClick={() => roll("2d20kl1")}>
           Desvantagem
         </button>
       </div>

@@ -74,7 +74,7 @@ function RoomList() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="font-display text-3xl font-extrabold">Mesas</h1>
-      <p className="text-dim">Crie uma mesa como mestre ou entre na de alguém pelo link.</p>
+      <p className="text-dim">Vai jogar? Cole o link que o mestre mandou. Vai mestrar? Crie uma mesa e envie o convite ao grupo.</p>
 
       {error && <p className="mt-4 text-sm text-blood" role="alert">{error}</p>}
 
@@ -106,7 +106,7 @@ function RoomList() {
             <span className="field-label">Link ou código</span>
             <input className="field" value={join} onChange={(e) => setJoin(e.target.value)} placeholder="https://…/mesa/…" />
           </label>
-          <button className="btn btn-ghost w-full border border-module-soft">Entrar</button>
+          <button className="btn btn-ghost w-full border border-rule">Entrar</button>
         </form>
       </div>
 
@@ -116,7 +116,7 @@ function RoomList() {
       ) : rooms.length === 0 ? (
         <p className="mt-3 text-dim">Você ainda não criou nenhuma mesa.</p>
       ) : (
-        <ul className="mt-3 divide-y divide-module-soft overflow-hidden rounded-lg border border-module-soft bg-white">
+        <ul className="mt-3 divide-y divide-rule overflow-hidden rounded-lg border border-rule bg-vellum">
           {rooms.map((r) => (
             <li key={r.id} className="flex items-center gap-4 px-4 py-3 hover:bg-paper">
               <Link href={`/mesa/${r.id}`} className="min-w-0 flex-1">

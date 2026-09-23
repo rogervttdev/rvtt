@@ -4,8 +4,9 @@ import { SessionProvider } from "@/components/SessionProvider";
 import { Nav } from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Tábula — mesa virtual de D&D",
-  description: "Fichas de personagem e mesa multiplayer com grid e dados em tempo real.",
+  title: "Taverna Inicial — sua primeira mesa de D&D",
+  description:
+    "Um lugar acolhedor para dar os primeiros passos no D&D: crie sua ficha e jogue com amigos numa mesa virtual com mapa e dados.",
   icons: { icon: "/favicon.svg" },
 };
 
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Alegreya+Sans:wght@400;500;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&family=Alegreya+Sans:wght@400;500;700&display=swap"
         />
       </head>
       <body className="min-h-dvh">

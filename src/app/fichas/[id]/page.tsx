@@ -105,7 +105,7 @@ function CharacterEditor() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 pb-28 pt-8">
-      <Link href="/fichas" className="text-sm font-semibold text-module hover:underline">
+      <Link href="/fichas" className="text-sm font-semibold text-ember hover:underline">
         ← Todas as fichas
       </Link>
 
@@ -150,18 +150,18 @@ function CharacterEditor() {
               <span className="text-base text-dim"> / {char.hp_max}</span>
             </span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-module-soft">
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-rule">
             <div
               className={`h-full ${hpPct <= 25 ? "bg-blood" : "bg-moss"}`}
               style={{ width: `${hpPct}%` }}
             />
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button className="btn btn-ghost border border-module-soft" onClick={() => patch({ hp_current: char.hp_current - 1 })}>
+            <button className="btn btn-ghost border border-rule" onClick={() => patch({ hp_current: char.hp_current - 1 })}>
               −1
             </button>
             <button
-              className="btn btn-ghost border border-module-soft"
+              className="btn btn-ghost border border-rule"
               onClick={() => patch({ hp_current: Math.min(char.hp_max, char.hp_current + 1) })}
             >
               +1
@@ -193,7 +193,7 @@ function CharacterEditor() {
           <span className="field-label">Proficiência</span>
           <span className="font-display text-3xl font-bold">{formatMod(prof)}</span>
           <button
-            className="mt-1 self-start text-sm font-semibold text-module hover:underline"
+            className="mt-1 self-start text-sm font-semibold text-ember hover:underline"
             onClick={() => rollCheck("Iniciativa", modifier(char.abilities.dex))}
           >
             Rolar iniciativa ({formatMod(modifier(char.abilities.dex))})
@@ -204,15 +204,18 @@ function CharacterEditor() {
       {/* Atributos */}
       <section className="mt-8">
         <h2 className="font-display text-xl font-bold">Atributos</h2>
-        <p className="text-sm text-dim">Toque no modificador para rolar um teste.</p>
+        <p className="text-sm text-dim">
+          O número grande é o bônus que você soma no d20; toque nele para rolar um teste. Começando agora? Distribua
+          15, 14, 13, 12, 10 e 8 entre os seis, colocando os maiores no que seu herói faz melhor.
+        </p>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {ABILITIES.map(({ key, label }) => {
+          {ABILITIES.map(({ key, label, hint }) => {
             const m = modifier(char.abilities[key]);
             return (
               <div key={key} className="panel flex flex-col items-center p-3 text-center">
                 <span className="text-sm font-bold text-dim">{label}</span>
                 <button
-                  className="my-1 font-display text-3xl font-extrabold text-module-deep hover:text-module"
+                  className="my-1 font-display text-3xl font-extrabold text-ember-deep hover:text-ember"
                   onClick={() => rollCheck(label, m)}
                   aria-label={`Rolar teste de ${label} (${formatMod(m)})`}
                 >
@@ -227,12 +230,13 @@ function CharacterEditor() {
                   onChange={(e) => setAbility(key, Number(e.target.value))}
                   aria-label={`Valor de ${label}`}
                 />
+                <span className="mt-2 text-xs leading-snug text-dim">{hint}</span>
               </div>
             );
           })}
         </div>
         {lastRoll && (
-          <p className="mt-3 rounded-md bg-module-soft px-3 py-2 font-semibold text-module-deep" role="status">
+          <p className="mt-3 rounded-md bg-rule px-3 py-2 font-semibold text-ember-deep" role="status">
             {lastRoll}
           </p>
         )}
@@ -254,7 +258,7 @@ function CharacterEditor() {
             <input className="field" value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Corda de cânhamo (15 m)" />
             <button className="btn btn-primary">Adicionar</button>
           </form>
-          <ul className="mt-3 divide-y divide-module-soft rounded-lg border border-module-soft bg-white">
+          <ul className="mt-3 divide-y divide-rule rounded-lg border border-rule bg-vellum">
             {char.inventory.length === 0 && <li className="px-3 py-3 text-sm text-dim">Mochila vazia.</li>}
             {char.inventory.map((item) => (
               <li key={item.id} className="flex items-center gap-2 px-3 py-2">
@@ -319,14 +323,14 @@ function CharacterEditor() {
             </select>
             <button className="btn btn-primary">Adicionar</button>
           </form>
-          <ul className="mt-3 divide-y divide-module-soft rounded-lg border border-module-soft bg-white">
+          <ul className="mt-3 divide-y divide-rule rounded-lg border border-rule bg-vellum">
             {spellsByLevel.length === 0 && <li className="px-3 py-3 text-sm text-dim">Nenhuma magia conhecida.</li>}
             {spellsByLevel.map((s) => (
               <li key={s.id} className="flex items-center gap-3 px-3 py-2">
                 <input
                   type="checkbox"
                   checked={s.prepared}
-                  className="h-4 w-4 accent-[#1d5fa8]"
+                  className="h-4 w-4 accent-[#a8431f]"
                   aria-label={`${s.name} preparada`}
                   onChange={(e) =>
                     patch({ spells: char.spells.map((x) => (x.id === s.id ? { ...x, prepared: e.target.checked } : x)) })
@@ -364,7 +368,7 @@ function CharacterEditor() {
       </button>
 
       {/* Barra de salvar */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-module-soft bg-white/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-rule bg-wood/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
           <span className="text-sm text-dim" role="status">
             {message || (dirty ? "Alterações não salvas." : "Tudo salvo.")}

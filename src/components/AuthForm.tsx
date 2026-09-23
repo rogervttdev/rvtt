@@ -30,25 +30,27 @@ export function AuthForm() {
         },
       });
       if (error) setError(traduzir(error.message));
-      else if (!data.session) setInfo("Conta criada. Abra o link que enviamos para o seu e-mail e depois entre aqui.");
+      else if (!data.session) setInfo("Conta criada! Abra o link que enviamos para o seu e-mail e depois volte para entrar.");
     }
     setBusy(false);
   }
 
   return (
     <div className="mx-auto w-full max-w-sm">
-      <div className="mb-5 flex rounded-md border border-module-soft bg-white p-1" role="tablist">
+      <div className="mb-5 flex rounded-lg border border-rule bg-paper/70 p-1 shadow-[inset_0_1px_3px_rgb(90_58_36/0.25)]" role="tablist">
         {(["entrar", "criar"] as const).map((m) => (
           <button
             key={m}
             role="tab"
             aria-selected={mode === m}
             onClick={() => setMode(m)}
-            className={`flex-1 rounded px-3 py-1.5 text-sm font-semibold ${
-              mode === m ? "bg-module text-white" : "text-dim hover:text-ink"
+            className={`flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-semibold sm:text-base ${
+              mode === m
+                ? "bg-ember text-foam shadow-[inset_0_1px_0_rgb(255_215_170/0.35),0_1px_2px_rgb(0_0_0/0.3)]"
+                : "text-dim hover:text-ink"
             }`}
           >
-            {m === "entrar" ? "Entrar" : "Criar conta"}
+            {m === "entrar" ? "Já tenho conta" : "Sou novo aqui"}
           </button>
         ))}
       </div>
@@ -57,7 +59,7 @@ export function AuthForm() {
         {mode === "criar" && (
           <label className="block">
             <span className="field-label">Nome na mesa</span>
-            <input className="field" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Como os outros vão te ver" />
+            <input className="field" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Como o grupo vai te chamar" />
           </label>
         )}
         <label className="block">
@@ -78,10 +80,13 @@ export function AuthForm() {
         </label>
 
         {error && <p className="text-sm text-blood" role="alert">{error}</p>}
-        {info && <p className="text-sm text-module-deep" role="status">{info}</p>}
+        {info && <p className="text-sm text-moss" role="status">{info}</p>}
+        {mode === "criar" && !info && (
+          <p className="text-sm text-dim">Grátis e sem compromisso. Só usamos seu e-mail para você entrar.</p>
+        )}
 
         <button className="btn btn-primary w-full" disabled={busy}>
-          {busy ? "Aguarde…" : mode === "entrar" ? "Entrar" : "Criar conta"}
+          {busy ? "Um instante…" : mode === "entrar" ? "Entrar na taverna" : "Criar minha conta"}
         </button>
       </form>
     </div>
