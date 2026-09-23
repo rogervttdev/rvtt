@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+/* Paleta inspirada nos mapas azuis dos módulos clássicos de D&D */
+@theme {
+  --color-paper: #f3f6f9;
+  --color-module: #1d5fa8;
+  --color-module-deep: #123f73;
+  --color-module-soft: #d9e6f4;
+  --color-ink: #172233;
+  --color-dim: #5b6778;
+  --color-blood: #a8321f;
+  --color-moss: #2f7d4a;
+
+  --font-display: "Alegreya", Georgia, serif;
+  --font-sans: "Alegreya Sans", system-ui, -apple-system, sans-serif;
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-module);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Papel quadriculado azul — usado no mapa e no cabeçalho da home */
+.graph-paper {
+  background-color: #fff;
+  background-image:
+    linear-gradient(to right, rgb(29 95 168 / 0.28) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(29 95 168 / 0.28) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@layer components {
+  .field {
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid var(--color-module-soft);
+    background: #fff;
+    padding: 0.5rem 0.75rem;
+    color: var(--color-ink);
+    outline: none;
+  }
+  .field:focus {
+    border-color: var(--color-module);
+  }
+  .field-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-dim);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: background-color 120ms, color 120ms;
+    cursor: pointer;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-module);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-module-deep);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-module-deep);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-module-soft);
+  }
+  .btn-danger {
+    background: transparent;
+    color: var(--color-blood);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: rgb(168 50 31 / 0.08);
+  }
+  .panel {
+    border: 1px solid var(--color-module-soft);
+    background: #fff;
+    border-radius: 0.5rem;
+  }
+  .die-btn {
+    border-radius: 0.375rem;
+    border: 1px solid var(--color-module-soft);
+    background: #fff;
+    padding: 0.375rem 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--color-module-deep);
+    cursor: pointer;
+  }
+  .die-btn:hover {
+    background: var(--color-module);
+    color: #fff;
+  }
+}
