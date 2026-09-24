@@ -24,6 +24,16 @@ export type SkillKey =
   | "intimidacao"
   | "persuasao";
 
+/** Equipamento escolhido do catálogo (coluna jsonb `equipment`). */
+export type Equipment = {
+  armor: string | null;
+  shield: boolean;
+  weapons: { uid: string; id: string }[];
+  focus: string | null;
+  /** Ajuste manual na CA (item mágico, magia etc.) */
+  acBonus: number;
+};
+
 /** Dados extras da ficha, guardados na coluna jsonb `details`. */
 export type CharacterDetails = {
   subrace: string;
@@ -41,6 +51,8 @@ export type Character = {
   user_id: string;
   name: string;
   avatar_url: string | null;
+  alignment: string | null;
+  equipment: Equipment;
   race: string | null;
   class: string | null;
   level: number;

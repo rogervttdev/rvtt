@@ -23,6 +23,8 @@ alter table public.characters add column if not exists user_id uuid default auth
 alter table public.characters alter column user_id set default auth.uid();
 alter table public.characters add column if not exists name text not null default 'Novo personagem';
 alter table public.characters add column if not exists avatar_url text;  -- retrato (URL pública do Storage)
+alter table public.characters add column if not exists alignment text;   -- tendência
+alter table public.characters add column if not exists equipment jsonb not null default '{}'::jsonb;  -- armadura, escudo, armas, foco
 alter table public.characters add column if not exists race text;
 alter table public.characters add column if not exists class text;
 alter table public.characters add column if not exists level int not null default 1;

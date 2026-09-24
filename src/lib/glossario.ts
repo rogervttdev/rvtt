@@ -85,7 +85,55 @@ export const GLOSSARIO = {
     "É o quanto você nota sem estar procurando: 10 + seu bônus de Percepção.",
     "O mestre compara esse número com a Furtividade de quem tenta se esconder de você, sem você precisar rolar nada.",
   ],
+  tendencia: [
+    "A tendência resume a moral e o jeito de agir do personagem em duas palavras.",
+    "O primeiro eixo diz como ele vê regras e tradições: Leal (respeita leis e compromissos), Neutro ou Caótico (valoriza a liberdade e age por impulso). O segundo diz como trata os outros: Bom, Neutro ou Mau.",
+    "É um guia para interpretar, não uma prisão: seu herói pode mudar com a história. Para a primeira mesa, tendências boas ou neutras costumam combinar melhor com o grupo. Converse com o mestre antes de escolher uma tendência má.",
+  ],
+  equipamento: [
+    "Aqui você escolhe o que o herói carrega para a luta. A ficha calcula sozinha a Classe de Armadura e monta os ataques com o dano certo.",
+    "Pergunte ao mestre qual equipamento inicial a sua classe recebe. Normalmente é uma armadura, uma ou duas armas e um pacote de aventureiro.",
+  ],
+  armadura: [
+    "A armadura aumenta a sua Classe de Armadura (CA), deixando você mais difícil de acertar.",
+    "Leves somam toda a sua Destreza. Médias somam no máximo +2 de Destreza. Pesadas não somam Destreza, mas têm CA alta e algumas pedem Força mínima.",
+    "Usar uma armadura sem treino da sua classe dá desvantagem em testes e ataques de Força e Destreza, e impede de lançar magias.",
+  ],
+  escudo: [
+    "O escudo soma +2 na CA, mas ocupa uma mão: não dá para usar arma de duas mãos junto, e conjuradores precisam da outra mão livre para gestos (ou de um foco no escudo, como o emblema sagrado).",
+  ],
+  furtividade: [
+    "Desvantagem em Furtividade: armaduras barulhentas fazem você rolar dois d20 e ficar com o menor ao tentar se esconder ou andar em silêncio.",
+  ],
+  forca_minima: [
+    "Algumas armaduras pesadas exigem Força mínima. Se a sua Força for menor, seu deslocamento cai 3 metros (anões não sofrem essa penalidade).",
+  ],
+  armas: [
+    "Armas simples (adagas, maças, arcos curtos) quase todo mundo sabe usar. Armas marciais (espadas longas, machados grandes, arcos longos) exigem treino de guerreiro: bárbaros, guerreiros, paladinos e patrulheiros.",
+    "Se sua classe ou raça não te treinou na arma, você ainda pode usá-la, mas não soma o bônus de proficiência no ataque.",
+  ],
+  ataques: [
+    "Para atacar, role d20 + bônus de ataque. Se o resultado igualar ou passar a CA do alvo, você acerta e rola o dano.",
+    "Bônus de ataque = modificador de Força (ou Destreza, em armas à distância e de acuidade) + bônus de proficiência, se você for treinado na arma.",
+    "Dano = dado da arma + o mesmo modificador. Tirou 20 natural no ataque? É um acerto crítico: role os dados de dano duas vezes.",
+  ],
+  foco: [
+    "Um foco de conjuração é o objeto que o conjurador segura para canalizar a magia. Ele substitui os materiais simples que algumas magias pedem.",
+    "Cada tipo de conjurador usa o seu: foco arcano (feiticeiro, bruxo e mago), foco druídico (druida), símbolo sagrado (clérigo e paladino) e instrumento musical (bardo). Cajados ainda servem como arma.",
+  ],
 } satisfies Record<string, string[]>;
+
+export const ALIGNMENTS: { name: string; desc: string }[] = [
+  { name: "Leal e Bom", desc: "Faz o que é certo seguindo regras, promessas e honra. O cavaleiro justo que protege os inocentes." },
+  { name: "Neutro e Bom", desc: "Faz o bem da melhor forma possível, sem se prender a leis nem se rebelar contra elas. O curandeiro que ajuda quem precisa." },
+  { name: "Caótico e Bom", desc: "Segue a própria consciência: bondoso, mas avesso a regras e autoridades. O herói fora da lei que rouba dos ricos para dar aos pobres." },
+  { name: "Leal e Neutro", desc: "Age de acordo com a lei, a tradição ou um código pessoal, acima de ser bom ou mau. O juiz imparcial ou o soldado disciplinado." },
+  { name: "Neutro", desc: "Evita tomar partido e age conforme a situação pede. Prefere o equilíbrio aos extremos." },
+  { name: "Caótico e Neutro", desc: "Segue os próprios desejos e valoriza a liberdade acima de tudo. Imprevisível, mas não cruel." },
+  { name: "Leal e Mau", desc: "Toma o que quer de forma metódica, dentro de uma ordem ou hierarquia. O tirano ou o cavaleiro sombrio que cumpre sua palavra." },
+  { name: "Neutro e Mau", desc: "Faz o que for preciso para se dar bem, sem compaixão nem lealdade verdadeira. O mercenário egoísta." },
+  { name: "Caótico e Mau", desc: "Age com violência e crueldade movido por raiva, ódio ou prazer. Raramente combina com um grupo de heróis." },
+];
 
 export type GlossarioKey = keyof typeof GLOSSARIO;
 

@@ -71,6 +71,14 @@ Permissões: cada jogador move/remove os próprios tokens; o mestre (dono da mes
 - Os selos "?" mostram um balão ao passar o mouse e abrem uma janela ao clicar/tocar (componente `src/components/Help.tsx`).
 - Sub-raça, antecedente, perícias escolhidas, inspiração e dados de vida gastos ficam na coluna `details` (jsonb).
 
+## Tendência e equipamento
+
+- **Tendência**: as 9 tendências oficiais, ao lado do antecedente (coluna `characters.alignment`).
+- **Equipamento** (coluna `characters.equipment`, jsonb): armadura, escudo, armas e foco de conjuração escolhidos em catálogos com todas as armaduras (leves, médias, pesadas), escudo, armas simples e marciais e focos (arcanos, druídicos, símbolos sagrados, instrumentos e cajados mágicos). Dados em `src/lib/equipamento.ts`.
+- A **CA** é calculada sozinha (armadura + Destreza conforme o tipo + escudo + bônus extra) e salva na coluna `ac`.
+- Os **ataques** são montados automaticamente: bônus de ataque (Força, ou Destreza para armas à distância/acuidade, + proficiência se a classe/raça é treinada) e dano (dado da arma + modificador; versáteis mostram também o dano com duas mãos). Cajados servem de arma (como bordão).
+- Cada item, propriedade (Acuidade, Leve, Versátil…) e tipo de dano tem um balão explicativo.
+
 ## Retrato do personagem
 
 Na ficha, a moldura ao lado do nome aceita PNG, JPG ou WEBP (clique, toque ou arraste a imagem). A foto é reduzida no navegador (máx. 640 px), enviada ao **Supabase Storage** no bucket público `avatars`, na pasta `avatars/<user_id>/`, e a URL fica salva na coluna `characters.avatar_url`. O retrato é salvo na hora, sem precisar do botão "Salvar ficha". Ao trocar ou excluir, o arquivo antigo é apagado.

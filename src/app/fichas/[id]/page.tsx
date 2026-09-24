@@ -10,7 +10,9 @@ import { useUser } from "@/components/SessionProvider";
 import { supabase } from "@/lib/supabase";
 import { deleteAvatar } from "@/lib/avatar";
 import { ABILITIES, ABILITY_LABEL, formatMod, modifier, normalizeCharacter, proficiency, rollFormula, uid } from "@/lib/dnd";
-import { ABILITY_ABOUT, GLOSSARIO } from "@/lib/glossario";
+import { ABILITY_ABOUT, ALIGNMENTS, GLOSSARIO } from "@/lib/glossario";
+import { computeAc, findArmor } from "@/lib/equipamento";
+import { EquipmentSection } from "@/components/EquipmentSection";
 import {
   BACKGROUNDS,
   CLASSES,
@@ -25,7 +27,6 @@ import {
   speedFor,
   standardArrayFor,
   suggestedHp,
-  unarmoredAc,
 } from "@/lib/regras";
 import type { Abilities, AbilityKey, Character, CharacterDetails, RollResult, SkillKey } from "@/lib/types";
 
@@ -77,6 +78,7 @@ function CharacterEditor() {
   const derived = useMemo(() => {
     if (!char) return null;
     const d = char.details;
+  const alignment = ALIGNMENTS.find((a) => a.name === char.alignment);
     const race = findRace(char.race);
     const sub = race?.subraces?.find((s) => s.name === d.subrace);
     const cls = findClass(char.class);
@@ -111,9 +113,13 @@ function CharacterEditor() {
       skillBonus,
       allowedChoices,
       overlap,
+      ac: computeAc(char.equipment, cls, mods),
+      armorSpeedPenalty: (() => {
+        const armor = findArmor(char.equipment.armor);
+        return armor?.strength && scores.str < armor.strength && race?.name !== "Anão" ? 3 : 0;
+      })(),
       speed: speedFor(race, sub),
       hpSuggestion: suggestedHp(cls, char.level, mods.con, sub),
-      acSuggestion: unarmoredAc(cls, mods),
       passive: 10 + skillBonus("percepcao"),
     };
   }, [char]);
@@ -150,7 +156,9 @@ function CharacterEditor() {
       abilities: char.abilities,
       hp_current: char.hp_current,
       hp_max: char.hp_max,
-      ac: char.ac,
+      ac: derived?.ac.total ?? char.ac,
+      alignment: char.alignment || null,
+      equipment: char.equipment,
       inventory: char.inventory,
       spells: char.spells,
       notes: char.notes,
@@ -201,6 +209,7 @@ function CharacterEditor() {
     );
 
   const d = char.details;
+  const alignment = ALIGNMENTS.find((a) => a.name === char.alignment);
   const { race, sub, cls, bg, bonus, scores, mods, prof, granted, chosen, isProf, skillBonus, allowedChoices, overlap } = derived;
   const hpPct = char.hp_max > 0 ? Math.max(0, Math.min(100, (char.hp_current / char.hp_max) * 100)) : 0;
   const hitDiceLeft = Math.max(0, char.level - d.hitDiceSpent);
@@ -407,28 +416,66 @@ function CharacterEditor() {
             )}
           </div>
 
-          {/* Antecedente */}
+          {/* Antecedente e tendência */}
           <div className="panel p-4">
-            <div className="flex items-center gap-1.5">
-              <label htmlFor="antecedente" className="field-label mb-0">
-                Antecedente
-              </label>
-              <Help title="Antecedente" paragraphs={GLOSSARIO.antecedente} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <label htmlFor="antecedente" className="field-label mb-0">
+                    Antecedente
+                  </label>
+                  <Help title="Antecedente" paragraphs={GLOSSARIO.antecedente} />
+                </div>
+                <select id="antecedente" className="field mt-1 px-2 text-[0.95rem]" value={d.background} onChange={(e) => patchDetails({ background: e.target.value })}>
+                  <option value="">Escolha…</option>
+                  {BACKGROUNDS.map((b) => (
+                    <option key={b.name} value={b.name}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <label htmlFor="tendencia" className="field-label mb-0">
+                    Tendência
+                  </label>
+                  <Help title="Tendência" paragraphs={GLOSSARIO.tendencia}>
+                    <ul className="space-y-1.5">
+                      {ALIGNMENTS.map((al) => (
+                        <li key={al.name}>
+                          <strong>{al.name}:</strong> {al.desc}
+                        </li>
+                      ))}
+                    </ul>
+                  </Help>
+                </div>
+                <select id="tendencia" className="field mt-1 px-2 text-[0.95rem]" value={char.alignment ?? ""} onChange={(e) => patch({ alignment: e.target.value })}>
+                  <option value="">Escolha…</option>
+                  {ALIGNMENTS.map((al) => (
+                    <option key={al.name} value={al.name}>
+                      {al.name}
+                    </option>
+                  ))}
+                  {char.alignment && !alignment && <option value={char.alignment}>{char.alignment}</option>}
+                </select>
+              </div>
             </div>
-            <select id="antecedente" className="field mt-1" value={d.background} onChange={(e) => patchDetails({ background: e.target.value })}>
-              <option value="">Escolha um antecedente…</option>
-              {BACKGROUNDS.map((b) => (
-                <option key={b.name} value={b.name}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
             {bg && (
               <div className="mt-3 space-y-2 text-sm">
                 <p className="leading-relaxed">{bg.desc}</p>
                 <p>
                   <strong>Perícias treinadas:</strong> {bg.skills.map((s) => SKILLS.find((x) => x.key === s)!.label).join(" e ")}
                 </p>
+              </div>
+            )}
+            {alignment && (
+              <div className="mt-3 border-t border-rule pt-3 text-sm">
+                <p className="flex items-center gap-1.5 font-semibold">
+                  {alignment.name}
+                  <Help title={alignment.name} paragraphs={[alignment.desc, "Use a tendência como bússola para decidir como seu herói reage às situações. Ela pode mudar com a história."]} />
+                </p>
+                <p className="leading-relaxed text-dim">{alignment.desc}</p>
               </div>
             )}
           </div>
@@ -612,19 +659,11 @@ function CharacterEditor() {
             </div>
           </div>
 
-          <StatBox label="Classe de armadura" help={<Help title="Classe de armadura" paragraphs={GLOSSARIO.ca}><HelpCalc>Sem armadura, a sua seria {derived.acSuggestion}: 10 {formatMod(mods.dex)} de Destreza{cls?.unarmored ? ` ${formatMod(mods[cls.unarmored])} de ${ABILITY_LABEL[cls.unarmored]} (Defesa sem Armadura do ${cls.name})` : ""}.</HelpCalc></Help>}>
-            <input
-              className="w-full bg-transparent font-display text-4xl font-bold outline-none"
-              type="number"
-              value={char.ac}
-              aria-label="Classe de armadura"
-              onChange={(e) => patch({ ac: Number(e.target.value) || 0 })}
-            />
-            {char.ac === 10 && derived.acSuggestion !== 10 && (
-              <button className="text-left text-xs font-semibold text-ember-deep underline" onClick={() => patch({ ac: derived.acSuggestion })}>
-                Usar {derived.acSuggestion} (sem armadura)
-              </button>
-            )}
+          <StatBox label="Classe de armadura" help={<Help title="Classe de armadura" paragraphs={GLOSSARIO.ca}><HelpCalc>{derived.ac.parts.join(" ")} = {derived.ac.total}</HelpCalc></Help>}>
+            <span className="font-display text-4xl font-bold">{derived.ac.total}</span>
+            <a href="#equipamento" className="text-xs font-semibold text-ember-deep underline">
+              calculada pelo equipamento
+            </a>
           </StatBox>
 
           <StatBox label="Iniciativa" help={<Help title="Iniciativa" paragraphs={GLOSSARIO.iniciativa}><HelpCalc>Sua iniciativa é o modificador de Destreza: {formatMod(mods.dex)}.</HelpCalc></Help>}>
@@ -639,8 +678,11 @@ function CharacterEditor() {
           </StatBox>
 
           <StatBox label="Deslocamento" help={<Help title="Deslocamento" paragraphs={GLOSSARIO.deslocamento}><HelpCalc>{race ? `${sub?.speed ? sub.name : race.name}: ${formatMeters(derived.speed)}` : "Sem raça escolhida: 9 m"} = {Math.floor(derived.speed / 1.5)} quadrados no mapa.</HelpCalc></Help>}>
-            <span className="font-display text-4xl font-bold">{formatMeters(derived.speed)}</span>
-            <span className="text-xs text-dim">{Math.floor(derived.speed / 1.5)} quadrados</span>
+            <span className="font-display text-4xl font-bold">{formatMeters(derived.speed - derived.armorSpeedPenalty)}</span>
+            <span className="text-xs text-dim">
+              {Math.floor((derived.speed - derived.armorSpeedPenalty) / 1.5)} quadrados
+              {derived.armorSpeedPenalty ? " · −3 m pela armadura pesada" : ""}
+            </span>
           </StatBox>
 
           <StatBox label="Proficiência" help={<Help title="Bônus de proficiência" paragraphs={GLOSSARIO.proficiencia}><HelpCalc>No {char.level}º nível o seu bônus é {formatMod(prof)}.</HelpCalc></Help>}>
@@ -662,6 +704,19 @@ function CharacterEditor() {
           </StatBox>
         </div>
       </section>
+
+      <EquipmentSection
+        equipment={char.equipment}
+        mods={mods}
+        scores={scores}
+        prof={prof}
+        cls={cls}
+        race={race}
+        sub={sub}
+        ac={derived.ac}
+        onChange={(equipment) => patch({ equipment })}
+        onRoll={doRoll}
+      />
 
       {/* ---------- Testes de resistência ---------- */}
       <section className="mt-10">
@@ -776,7 +831,8 @@ function CharacterEditor() {
       {/* ---------- Inventário e magias ---------- */}
       <div className="mt-10 grid gap-6 md:grid-cols-2">
         <section>
-          <h2 className="font-display text-2xl font-bold">Inventário</h2>
+          <h2 className="font-display text-2xl font-bold">Mochila</h2>
+          <p className="text-sm text-dim">Outros itens: cordas, tochas, rações, poções. Armas e armaduras ficam em Equipamento.</p>
           <form
             className="mt-3 flex gap-2"
             onSubmit={(e) => {

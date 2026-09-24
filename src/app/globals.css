@@ -286,6 +286,24 @@ body {
   .help-seal:hover {
     background: radial-gradient(circle at 35% 30%, #f6e3b0, #d4ab5c 60%, #9a7430);
   }
+  /* Termo com ajuda (chips de propriedades, nomes de itens) */
+  .help-term {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px dashed var(--color-brass-deep);
+    background: rgb(195 154 78 / 0.14);
+    padding: 0.05rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-brass-deep);
+    cursor: help;
+    white-space: nowrap;
+  }
+  .help-term:hover {
+    background: rgb(195 154 78 / 0.3);
+    color: var(--color-ember-deep);
+  }
   .help-tip,
   .help-dialog {
     text-align: left;
@@ -463,6 +481,83 @@ body {
     border: 2px solid var(--color-brass);
     box-shadow: 0 0 0 1px #5f4318, 0 2px 5px rgb(42 28 18 / 0.35);
     background: var(--color-vellum);
+  }
+  /* CA em forma de escudo */
+  .ac-shield {
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 4.6rem;
+    width: 4rem;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 0.4rem;
+    clip-path: path("M32 0 L64 8 V36 C64 58 48 70 32 74 C16 70 0 58 0 36 V8 Z");
+    background: linear-gradient(to bottom, #d8b56c, #8d6a2c);
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-wood-night);
+    text-shadow: 0 1px 0 rgb(255 240 200 / 0.5);
+  }
+  /* Catálogos (armaduras, armas, focos) */
+  .picker-dialog {
+    width: min(40rem, calc(100vw - 1rem));
+  }
+  .picker-group {
+    margin-bottom: 0.35rem;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-ember-deep);
+  }
+  .picker-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0.45rem;
+    border: 1px solid transparent;
+    padding: 0.55rem 0.6rem;
+  }
+  button.picker-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    border-color: var(--color-rule);
+    cursor: pointer;
+  }
+  .picker-row:hover {
+    background: rgb(211 189 144 / 0.25);
+  }
+  .picker-row.is-selected {
+    border-color: var(--color-brass-deep);
+    background: rgb(195 154 78 / 0.18);
+  }
+  /* Botões de rolar ataque e dano */
+  .attack-pill {
+    display: inline-flex;
+    min-width: 4.5rem;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 0.45rem;
+    border: 1px solid var(--color-rule);
+    background: #fbf4e2;
+    padding: 0.2rem 0.6rem;
+    color: var(--color-ember-deep);
+    line-height: 1.1;
+    box-shadow: 0 2px 0 var(--color-rule);
+    cursor: pointer;
+  }
+  .attack-pill:hover:not(:disabled) {
+    border-color: var(--color-brass-deep);
+    background: #fff8e8;
+  }
+  .attack-pill:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: none;
+  }
+  .attack-pill:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
   .panel {
     border: 1px solid var(--color-rule);

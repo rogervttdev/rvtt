@@ -14,8 +14,11 @@ export function Help({
   children,
   paragraphs,
   className = "",
+  label,
 }: {
   title: string;
+  /** Texto do gatilho; se ausente, mostra o selo "?" */
+  label?: React.ReactNode;
   /** Texto fixo (parágrafos) */
   paragraphs?: readonly string[];
   /** Conteúdo extra, como a conta do valor atual */
@@ -25,6 +28,7 @@ export function Help({
   const btnRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [tip, setTip] = useState<Tip | null>(null);
+  const [open, setOpen] = useState(false);
   const tipId = useId();
 
   useEffect(() => {
@@ -49,6 +53,7 @@ export function Help({
 
   function openDialog() {
     setTip(null);
+    setOpen(true);
     dialogRef.current?.showModal();
   }
 
@@ -64,7 +69,7 @@ export function Help({
       <button
         ref={btnRef}
         type="button"
-        className={`help-seal ${className}`}
+        className={label ? `help-term ${className}` : `help-seal ${className}`}
         aria-label={`O que é ${title}?`}
         aria-describedby={tip ? tipId : undefined}
         onPointerEnter={(e) => e.pointerType === "mouse" && showTip()}
@@ -73,7 +78,7 @@ export function Help({
         onBlur={() => setTip(null)}
         onClick={openDialog}
       >
-        ?
+        {label ?? "?"}
       </button>
 
       {tip && (
@@ -93,8 +98,10 @@ export function Help({
         ref={dialogRef}
         className="help-dialog"
         aria-label={title}
+        onClose={() => setOpen(false)}
         onClick={(e) => e.target === dialogRef.current && dialogRef.current?.close()}
       >
+        {open && (
         <div className="p-6">
           <p className="text-sm font-semibold text-brass-deep">Dica da taverna</p>
           <h3 className="mb-3 font-display text-2xl font-bold">{title}</h3>
@@ -103,6 +110,7 @@ export function Help({
             Entendi
           </button>
         </div>
+        )}
       </dialog>
     </>
   );
