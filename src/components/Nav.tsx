@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "./SessionProvider";
-import { TankardIcon } from "./Logo";
+import { TavernLogo } from "./Logo";
 import { supabase } from "@/lib/supabase";
 
 const LINKS = [
@@ -18,9 +18,9 @@ export function Nav() {
   return (
     <header className="tavern-wood sticky top-0 z-30 h-14 border-b-2 border-brass-deep shadow-[0_2px_10px_rgb(0_0_0/0.35)]">
       <div className="mx-auto flex h-full max-w-[1600px] items-center gap-6 px-4">
-        <Link href="/" className="flex items-center gap-2 font-display text-2xl font-bold text-brass-light">
-          <TankardIcon />
-          Taverna Inicial
+        <Link href="/" className="flex shrink-0 items-center gap-2 font-display text-2xl font-bold text-brass-light">
+          <TavernLogo size={44} priority className="drop-shadow-[0_2px_3px_rgb(0_0_0/0.6)]" />
+          <span className="hidden sm:inline">Taverna Inicial</span>
         </Link>
         {user && (
           <nav className="flex gap-1">

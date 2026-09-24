@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   title: "Taverna Inicial — sua primeira mesa de D&D",
   description:
     "Um lugar acolhedor para dar os primeiros passos no D&D: crie sua ficha e jogue com amigos numa mesa virtual com mapa e dados.",
-  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

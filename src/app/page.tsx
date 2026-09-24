@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession } from "@/components/SessionProvider";
 import { AuthForm } from "@/components/AuthForm";
 import { ConfigWarning } from "@/components/ConfigWarning";
-import { TankardIcon } from "@/components/Logo";
+import { TavernLogo } from "@/components/Logo";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 const STEPS = [
@@ -40,8 +40,19 @@ export default function Home() {
       <section className="tavern-wood border-b-4 border-brass-deep">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-[1.15fr_1fr] md:items-center md:py-24">
           <div>
-            <TankardIcon className="h-14 w-14 drop-shadow-[0_4px_8px_rgb(0_0_0/0.5)]" />
-            <h1 className="mt-5 font-display text-4xl font-bold leading-[1.1] text-foam sm:text-6xl">
+            <div className="flex items-center gap-4">
+              <TavernLogo
+                size={160}
+                priority
+                className="max-h-24 sm:max-h-40 drop-shadow-[0_10px_18px_rgb(0_0_0/0.55)]"
+              />
+              <span className="font-display text-3xl font-bold leading-none text-brass-light sm:text-4xl">
+                Taverna
+                <br />
+                Inicial
+              </span>
+            </div>
+            <h1 className="mt-6 font-display text-4xl font-bold leading-[1.1] text-foam sm:text-6xl">
               Puxe uma cadeira. Sua primeira aventura começa aqui.
             </h1>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-foam/85">
