@@ -28,7 +28,7 @@ function CharacterList() {
     supabase
       .from("characters")
       .select("*")
-      .eq("owner_id", user.id)
+      .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) setError(error.message);
@@ -40,7 +40,7 @@ function CharacterList() {
     setCreating(true);
     const { data, error } = await supabase
       .from("characters")
-      .insert({ owner_id: user.id, name: "Novo personagem" })
+      .insert({ user_id: user.id, name: "Novo personagem" })
       .select("id")
       .single();
     setCreating(false);
@@ -87,7 +87,7 @@ function CharacterList() {
                 <span className="min-w-0">
                   <span className="block truncate font-display text-lg font-bold">{c.name}</span>
                   <span className="block truncate text-sm text-dim">
-                    {[c.race, c.class].filter(Boolean).join(", ") || "Raça e classe não definidas"} · nível {c.level}
+                    {[c.details.subrace || c.race, c.class].filter(Boolean).join(", ") || "Raça e classe ainda não escolhidas"} · {c.level}º nível
                   </span>
                 </span>
               </Link>

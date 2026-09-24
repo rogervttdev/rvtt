@@ -3,11 +3,14 @@
 Next.js (App Router + Tailwind CSS v4) + Supabase (Auth, Database, Realtime).
 
 - **/fichas** — lista, cria e exclui personagens
-- **/fichas/[id]** — editor da ficha: atributos (com rolagem de teste), PV, CA, deslocamento, inventário, magias e anotações
+- **/fichas/[id]** — ficha guiada para iniciantes (D&D 5e): raças e sub-raças, classes, antecedentes, 18 perícias, testes de resistência, PV/CA/iniciativa/deslocamento/dados de vida/inspiração, com balões de ajuda explicando cada número
 - **/mesas** — cria mesas (como mestre) e entra em mesas pelo link
 - **/mesa/[id]** — mesa multiplayer: grid, tokens arrastáveis em tempo real (Broadcast), jogadores online (Presence), rolagem de dados compartilhada e configuração da mesa pelo mestre
 
 ## 1. Banco de dados (Supabase)
+
+> **Atualizando de uma versão anterior?** Rode o `supabase/schema.sql` de novo. Ele cria a coluna `user_id` nas fichas (copiando o antigo `owner_id`), a coluna `details` e as novas políticas de RLS baseadas em `user_id = auth.uid()`.
+
 
 Abra **SQL Editor** no Supabase, cole `supabase/schema.sql` e rode.
 O script é idempotente: como você já tem `profiles`, `characters`, `rooms` e `tokens`, ele só adiciona as colunas que faltarem, as políticas de RLS e o gatilho que cria o perfil no cadastro.
@@ -21,18 +24,20 @@ Supabase → **Authentication → URL Configuration**:
 - **Redirect URLs**: adicione também `http://localhost:3000`
 
 
-## 2.1 Confirmação de conta por código (e-mail)
+## 2.1 Cadastro com acesso imediato
 
-Ao criar a conta, a pessoa recebe um código de 6 dígitos por e-mail e o digita na tela "Uma coruja mensageira foi enviada!". O app usa `supabase.auth.signUp`, depois `supabase.auth.verifyOtp({ email, token, type: "signup" })` e, para reenviar, `supabase.auth.resend({ type: "signup", email })`.
+O cadastro usa `supabase.auth.signUp` e já entra na conta, sem código nem link de confirmação. Para isso:
 
-Configuração no Supabase (obrigatória):
+- Supabase → **Authentication → Providers → Email** (ou Sign In / Providers): **desligue "Confirm email"** e salve.
 
-1. **Authentication → Providers → Email** (ou Sign In / Providers): deixe **Confirm email** ligado.
-2. **Authentication → Emails → Templates → Confirm signup**: o modelo padrão manda só um link. Troque o conteúdo pelo arquivo `supabase/email-templates/confirmar-cadastro.html` (assunto sugerido: `Seu código para entrar na Taverna Inicial`). O importante é o modelo conter `{{ .Token }}`, que é o código.
-3. **Authentication → Providers → Email → Email OTP Length**: deixe em **6** para bater com o texto da tela (o campo aceita até 10 dígitos, se você mudar).
-4. Envio de e-mails: o servidor de e-mail embutido do Supabase tem limite baixo de envios por hora e serve para testes. Para uso real, configure um SMTP próprio em **Authentication → Emails → SMTP Settings** (Resend, Brevo, SendGrid etc.).
+Se isso ficar ligado, a conta é criada mas não entra sozinha; a tela avisa o que ajustar.
+Contas criadas enquanto a confirmação estava ligada e que nunca foram confirmadas podem ser liberadas em Authentication → Users → (usuário) → "Confirm email".
 
-Quem tentar entrar sem ter confirmado recebe um novo código automaticamente e cai na tela de confirmação.
+### Lembrar de mim
+
+A caixa "Lembrar de mim" (marcada por padrão) guarda a sessão do Supabase no `localStorage`, então a pessoa continua conectada mesmo fechando o navegador, e o e-mail fica preenchido na próxima visita. Desmarcada, a sessão vai para o `sessionStorage` e termina ao fechar o navegador. A lógica fica em `src/lib/supabase.ts` (armazenamento personalizado passado em `auth.storage`).
+
+Os campos usam `autocomplete` corretos, então o gerenciador de senhas do navegador também oferece para salvar e preencher o login.
 
 ## 3. Rodar localmente
 
@@ -57,6 +62,14 @@ Cada mesa usa o canal `room:<id>`:
 - O banco guarda o estado: ao soltar um token a posição é salva em `tokens`, então quem entra depois vê o mapa atualizado.
 
 Permissões: cada jogador move/remove os próprios tokens; o mestre (dono da mesa) move/remove qualquer um e altera a configuração.
+
+## Ficha para iniciantes
+
+- Regras em `src/lib/regras.ts` (raças, sub-raças, classes, antecedentes e perícias do Livro do Jogador) e textos de ajuda em `src/lib/glossario.ts`.
+- O valor digitado em cada atributo é o **valor base**; o bônus da raça é somado automaticamente.
+- Perícias do antecedente e da raça vêm marcadas; as da classe são escolhidas (as sugeridas têm ★).
+- Os selos "?" mostram um balão ao passar o mouse e abrem uma janela ao clicar/tocar (componente `src/components/Help.tsx`).
+- Sub-raça, antecedente, perícias escolhidas, inspiração e dados de vida gastos ficam na coluna `details` (jsonb).
 
 ## Dados
 

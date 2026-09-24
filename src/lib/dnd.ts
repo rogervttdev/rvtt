@@ -1,5 +1,14 @@
 import type { Abilities, AbilityKey, Character, RollResult } from "./types";
 
+export const ABILITY_LABEL: Record<AbilityKey, string> = {
+  str: "Força",
+  dex: "Destreza",
+  con: "Constituição",
+  int: "Inteligência",
+  wis: "Sabedoria",
+  cha: "Carisma",
+};
+
 export const ABILITIES: { key: AbilityKey; label: string; short: string; hint: string }[] = [
   { key: "str", label: "Força", short: "For", hint: "Golpes, carregar peso" },
   { key: "dex", label: "Destreza", short: "Des", hint: "Agilidade, arcos, furtividade" },
@@ -14,7 +23,7 @@ export const DEFAULT_ABILITIES: Abilities = { str: 10, dex: 10, con: 10, int: 10
 export const TOKEN_COLORS = ["#a8431f", "#4c7a36", "#2f5d7c", "#7a4a8c", "#b8862c", "#5a3a24", "#8f2417", "#2a1c12"];
 
 export const modifier = (score: number) => Math.floor((score - 10) / 2);
-export const formatMod = (m: number) => (m >= 0 ? `+${m}` : `${m}`);
+export const formatMod = (m: number) => (m >= 0 ? `+${m}` : `−${Math.abs(m)}`);
 export const proficiency = (level: number) => Math.ceil(Math.max(1, level) / 4) + 1;
 
 export const uid = () =>
@@ -34,7 +43,7 @@ export function initials(label: string) {
 export function normalizeCharacter(row: any): Character {
   return {
     id: row.id,
-    owner_id: row.owner_id,
+    user_id: row.user_id ?? row.owner_id,
     name: row.name ?? "Sem nome",
     race: row.race ?? "",
     class: row.class ?? "",
@@ -47,6 +56,14 @@ export function normalizeCharacter(row: any): Character {
     inventory: Array.isArray(row.inventory) ? row.inventory : [],
     spells: Array.isArray(row.spells) ? row.spells : [],
     notes: row.notes ?? "",
+    details: {
+      subrace: row.details?.subrace ?? "",
+      background: row.details?.background ?? "",
+      skills: Array.isArray(row.details?.skills) ? row.details.skills : [],
+      bonusChoices: Array.isArray(row.details?.bonusChoices) ? row.details.bonusChoices : [],
+      inspiration: Boolean(row.details?.inspiration),
+      hitDiceSpent: Number(row.details?.hitDiceSpent ?? 0),
+    },
     created_at: row.created_at ?? "",
     updated_at: row.updated_at ?? "",
   };

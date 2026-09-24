@@ -202,18 +202,186 @@ body {
     transform: translateY(2px);
     box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
   }
-  /* Campo do código de confirmação: dígitos grandes e espaçados */
-  .code-field {
-    text-align: center;
+  /* Botão de olho dentro do campo de senha */
+  .eye-toggle {
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    height: 2.1rem;
+    width: 2.1rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.35rem;
+    color: var(--color-brass-deep);
+    cursor: pointer;
+  }
+  .eye-toggle:hover {
+    color: var(--color-ember-deep);
+    background: rgb(211 189 144 / 0.35);
+  }
+  .eye-toggle[aria-pressed="true"] {
+    color: var(--color-ember);
+  }
+  /* "Lembrar de mim": caixinha de couro com visto dourado */
+  .remember {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    cursor: pointer;
+    padding: 0.2rem 0;
+  }
+  .remember input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .remember-box {
+    display: inline-flex;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    height: 1.35rem;
+    width: 1.35rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.3rem;
+    border: 1px solid #b89a63;
+    background: #fbf4e2;
+    color: transparent;
+    box-shadow: inset 0 1px 3px rgb(90 58 36 / 0.25);
+    transition: background-color 120ms, color 120ms;
+  }
+  .remember input:checked + .remember-box {
+    background: linear-gradient(to bottom, #bb542c, #8f3717);
+    border-color: #5f200c;
+    color: var(--color-brass-light);
+    box-shadow: inset 0 1px 0 rgb(255 215 170 / 0.35);
+  }
+  .remember input:focus-visible + .remember-box {
+    outline: 2px solid var(--color-brass-deep);
+    outline-offset: 2px;
+  }
+  /* Selo "?" de ajuda */
+  .help-seal {
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 1.25rem;
+    width: 1.25rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid var(--color-brass-deep);
+    background: radial-gradient(circle at 35% 30%, #f0d998, #c39a4e 60%, #8d6a2c);
+    color: var(--color-wood-night);
     font-family: var(--font-display);
-    font-size: 2rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    letter-spacing: 0.45em;
-    padding-left: 0.95rem;
+    line-height: 1;
+    cursor: help;
+    box-shadow: 0 1px 0 rgb(0 0 0 / 0.25);
+    vertical-align: middle;
+  }
+  .help-seal:hover {
+    background: radial-gradient(circle at 35% 30%, #f6e3b0, #d4ab5c 60%, #9a7430);
+  }
+  .help-tip,
+  .help-dialog {
+    text-align: left;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  .help-tip {
+    position: fixed;
+    z-index: 60;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-brass-deep);
+    background: linear-gradient(to bottom, #3f2819, #2a1a10);
+    color: var(--color-foam);
+    padding: 0.8rem 0.95rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.6);
+    pointer-events: none;
+  }
+  .help-tip .help-calc {
+    background: rgb(195 154 78 / 0.18);
+    color: var(--color-brass-light);
+    border-color: rgb(195 154 78 / 0.5);
+  }
+  .help-dialog {
+    width: min(30rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    border-radius: 0.75rem;
+    border: 1px solid #b89a63;
+    background-color: var(--color-vellum);
+    background-image:
+      radial-gradient(ellipse at center, transparent 55%, rgb(140 95 45 / 0.2) 100%),
+      var(--grain);
+    color: var(--color-ink);
+    box-shadow:
+      inset 0 0 0 4px rgb(246 236 212 / 0.6),
+      inset 0 0 0 5px rgb(141 106 44 / 0.35),
+      0 24px 60px -12px rgb(0 0 0 / 0.7);
+    font-size: 1.0625rem;
+  }
+  .help-dialog::backdrop {
+    background: rgb(30 19 13 / 0.65);
+  }
+  .help-calc {
+    border-radius: 0.4rem;
+    border: 1px dashed var(--color-brass-deep);
+    background: rgb(195 154 78 / 0.15);
+    padding: 0.45rem 0.65rem;
+    font-weight: 700;
     color: var(--color-ember-deep);
   }
-  .code-field::placeholder {
-    color: #d8c7a3;
+  /* Marcação de proficiência (perícias e resistências) */
+  .prof-check {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+  .prof-check input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    cursor: pointer;
+  }
+  .prof-check input:disabled {
+    cursor: default;
+  }
+  .prof-dot {
+    display: inline-block;
+    height: 1.05rem;
+    width: 1.05rem;
+    border-radius: 9999px;
+    border: 1.5px solid var(--color-brass-deep);
+    background: #fbf4e2;
+    box-shadow: inset 0 1px 2px rgb(90 58 36 / 0.25);
+  }
+  .prof-dot.is-on,
+  .prof-check input:checked + .prof-dot {
+    background: radial-gradient(circle at 35% 30%, #d9744a, #a8431f 55%, #6a2410);
+    border-color: #5f200c;
+  }
+  .prof-check input:focus-visible + .prof-dot {
+    outline: 2px solid var(--color-brass-deep);
+    outline-offset: 2px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    background: rgb(195 154 78 / 0.25);
+    padding: 0.05rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-brass-deep);
+    white-space: nowrap;
   }
   .panel {
     border: 1px solid var(--color-rule);

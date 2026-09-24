@@ -52,7 +52,7 @@ function GameTable() {
       const [roomRes, tokenRes, charRes] = await Promise.all([
         supabase.from("rooms").select("*").eq("id", roomId).maybeSingle(),
         supabase.from("tokens").select("*").eq("room_id", roomId).order("created_at"),
-        supabase.from("characters").select("id,name").eq("owner_id", user.id).order("name"),
+        supabase.from("characters").select("id,name").eq("user_id", user.id).order("name"),
       ]);
       if (cancelled) return;
       if (!roomRes.data) return setStatus("missing");

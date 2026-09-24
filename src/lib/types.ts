@@ -4,9 +4,41 @@ export type Abilities = Record<AbilityKey, number>;
 export type InventoryItem = { id: string; name: string; qty: number };
 export type Spell = { id: string; name: string; level: number; prepared: boolean };
 
+export type SkillKey =
+  | "atletismo"
+  | "acrobacia"
+  | "furtividade"
+  | "prestidigitacao"
+  | "arcanismo"
+  | "historia"
+  | "investigacao"
+  | "natureza"
+  | "religiao"
+  | "adestrar"
+  | "intuicao"
+  | "medicina"
+  | "percepcao"
+  | "sobrevivencia"
+  | "atuacao"
+  | "enganacao"
+  | "intimidacao"
+  | "persuasao";
+
+/** Dados extras da ficha, guardados na coluna jsonb `details`. */
+export type CharacterDetails = {
+  subrace: string;
+  background: string;
+  /** Perícias escolhidas pelo jogador (as da raça e do antecedente são automáticas). */
+  skills: SkillKey[];
+  /** Escolhas de +1 do Meio-Elfo. */
+  bonusChoices: AbilityKey[];
+  inspiration: boolean;
+  hitDiceSpent: number;
+};
+
 export type Character = {
   id: string;
-  owner_id: string;
+  user_id: string;
   name: string;
   race: string | null;
   class: string | null;
@@ -19,6 +51,7 @@ export type Character = {
   inventory: InventoryItem[];
   spells: Spell[];
   notes: string | null;
+  details: CharacterDetails;
   created_at: string;
   updated_at: string;
 };
