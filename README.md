@@ -20,25 +20,19 @@ Supabase → **Authentication → URL Configuration**:
 - **Site URL**: a URL da Vercel (ex.: `https://seu-app.vercel.app`)
 - **Redirect URLs**: adicione também `http://localhost:3000`
 
-Se quiser testar sem confirmar e-mail, desative **Confirm email** em Authentication → Providers → Email.
 
-## 2.1 Login com o Google
+## 2.1 Confirmação de conta por código (e-mail)
 
-O botão "Entrar com o Google" usa `supabase.auth.signInWithOAuth({ provider: "google" })`, através da função `signInWithGoogle()` em `src/lib/supabase.ts`. Para funcionar:
+Ao criar a conta, a pessoa recebe um código de 6 dígitos por e-mail e o digita na tela "Uma coruja mensageira foi enviada!". O app usa `supabase.auth.signUp`, depois `supabase.auth.verifyOtp({ email, token, type: "signup" })` e, para reenviar, `supabase.auth.resend({ type: "signup", email })`.
 
-1. **Google Cloud Console** (console.cloud.google.com):
-   - APIs e serviços → Tela de consentimento OAuth: tipo **Externo**, preencha o nome do app ("Taverna Inicial") e seu e-mail, e publique.
-   - Credenciais → Criar credenciais → **ID do cliente OAuth** → tipo **Aplicativo da Web**.
-   - Em **URIs de redirecionamento autorizados**, cole a Callback URL que o Supabase mostra, no formato `https://SEU-PROJETO.supabase.co/auth/v1/callback`.
-   - Copie o **Client ID** e o **Client Secret**.
-2. **Supabase** → Authentication → Providers → **Google**: ative e cole o Client ID e o Client Secret. Salve.
-3. **Supabase** → Authentication → URL Configuration → **Redirect URLs**: adicione
-   - `https://seu-app.vercel.app/**`
-   - `http://localhost:3000/**`
+Configuração no Supabase (obrigatória):
 
-   O `/**` permite voltar para a página em que a pessoa estava (por exemplo, o link de uma mesa).
+1. **Authentication → Providers → Email** (ou Sign In / Providers): deixe **Confirm email** ligado.
+2. **Authentication → Emails → Templates → Confirm signup**: o modelo padrão manda só um link. Troque o conteúdo pelo arquivo `supabase/email-templates/confirmar-cadastro.html` (assunto sugerido: `Seu código para entrar na Taverna Inicial`). O importante é o modelo conter `{{ .Token }}`, que é o código.
+3. **Authentication → Providers → Email → Email OTP Length**: deixe em **6** para bater com o texto da tela (o campo aceita até 10 dígitos, se você mudar).
+4. Envio de e-mails: o servidor de e-mail embutido do Supabase tem limite baixo de envios por hora e serve para testes. Para uso real, configure um SMTP próprio em **Authentication → Emails → SMTP Settings** (Resend, Brevo, SendGrid etc.).
 
-O nome do perfil é preenchido com o nome da conta Google. Se você já tinha rodado o `schema.sql` antes, rode de novo para atualizar o gatilho que cria o perfil.
+Quem tentar entrar sem ter confirmado recebe um novo código automaticamente e cai na tela de confirmação.
 
 ## 3. Rodar localmente
 

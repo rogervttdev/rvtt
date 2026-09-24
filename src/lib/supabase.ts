@@ -23,18 +23,3 @@ export const supabase = createClient(
     },
   },
 );
-
-/**
- * Login com o Google via Supabase Auth (OAuth).
- * Redireciona para o Google e depois volta para a página atual já autenticado.
- * Requer o provedor Google ativado em Supabase → Authentication → Providers.
- */
-export async function signInWithGoogle(redirectTo?: string) {
-  return supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: redirectTo ?? (typeof window !== "undefined" ? window.location.href.split("#")[0] : undefined),
-      queryParams: { prompt: "select_account" },
-    },
-  });
-}

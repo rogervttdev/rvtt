@@ -74,7 +74,7 @@ begin
   insert into public.profiles (id, username)
   values (new.id, coalesce(
     new.raw_user_meta_data->>'username',
-    new.raw_user_meta_data->>'full_name',   -- Google
+    new.raw_user_meta_data->>'full_name',   -- nome vindo de provedores externos
     new.raw_user_meta_data->>'name',
     split_part(new.email, '@', 1)
   ))
