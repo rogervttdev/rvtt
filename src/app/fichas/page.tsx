@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useUser } from "@/components/SessionProvider";
 import { supabase } from "@/lib/supabase";
-import { normalizeCharacter } from "@/lib/dnd";
+import { deleteAvatar } from "@/lib/avatar";
+import { initials, normalizeCharacter } from "@/lib/dnd";
 import type { Character } from "@/lib/types";
 
 export default function FichasPage() {
@@ -52,6 +53,7 @@ function CharacterList() {
     if (!confirm(`Excluir a ficha de ${c.name}? Isso não pode ser desfeito.`)) return;
     const { error } = await supabase.from("characters").delete().eq("id", c.id);
     if (error) return setError(error.message);
+    deleteAvatar(c.avatar_url).catch(() => {});
     setChars((cs) => cs?.filter((x) => x.id !== c.id) ?? null);
   }
 
@@ -81,8 +83,20 @@ function CharacterList() {
           {chars.map((c) => (
             <li key={c.id} className="flex items-center gap-4 px-4 py-3 hover:bg-paper">
               <Link href={`/fichas/${c.id}`} className="flex min-w-0 flex-1 items-center gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ember font-display text-lg font-bold text-[#fbeed3] shadow-[inset_0_1px_0_rgb(255_220_180/0.35)]">
-                  {c.level}
+                <span className="relative">
+                  {c.avatar_url ? (
+                    <span className="portrait-thumb block">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={c.avatar_url} alt="" className="h-full w-full object-cover" />
+                    </span>
+                  ) : (
+                    <span className="portrait-thumb flex items-center justify-center font-display text-lg font-bold text-brass-deep">
+                      {initials(c.name)}
+                    </span>
+                  )}
+                  <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-[#5f200c] bg-ember text-xs font-bold text-foam" title={`${c.level}º nível`}>
+                    {c.level}
+                  </span>
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate font-display text-lg font-bold">{c.name}</span>

@@ -22,6 +22,7 @@ create table if not exists public.characters (
 alter table public.characters add column if not exists user_id uuid default auth.uid() references auth.users(id) on delete cascade;
 alter table public.characters alter column user_id set default auth.uid();
 alter table public.characters add column if not exists name text not null default 'Novo personagem';
+alter table public.characters add column if not exists avatar_url text;  -- retrato (URL pública do Storage)
 alter table public.characters add column if not exists race text;
 alter table public.characters add column if not exists class text;
 alter table public.characters add column if not exists level int not null default 1;
@@ -171,3 +172,26 @@ create policy "tokens_delete" on public.tokens for delete to authenticated using
 
 -- Realtime: a mesa usa Broadcast + Presence (canais públicos),
 -- então não é preciso adicionar tabelas à publication supabase_realtime.
+
+-- ---------- Storage: retratos dos personagens ----------
+-- Bucket público "avatars" (leitura pela URL), até 5 MB, só imagens.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 5242880, array['image/png', 'image/jpeg', 'image/webp'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+-- Cada jogador só envia/troca/apaga arquivos dentro da própria pasta: avatars/<user_id>/...
+drop policy if exists "avatars_read" on storage.objects;
+drop policy if exists "avatars_insert_own" on storage.objects;
+drop policy if exists "avatars_update_own" on storage.objects;
+drop policy if exists "avatars_delete_own" on storage.objects;
+create policy "avatars_read" on storage.objects for select
+  using (bucket_id = 'avatars');
+create policy "avatars_insert_own" on storage.objects for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "avatars_update_own" on storage.objects for update to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "avatars_delete_own" on storage.objects for delete to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);

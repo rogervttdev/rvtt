@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Help, HelpCalc } from "@/components/Help";
+import { PortraitUploader } from "@/components/PortraitUploader";
+import { useUser } from "@/components/SessionProvider";
 import { supabase } from "@/lib/supabase";
+import { deleteAvatar } from "@/lib/avatar";
 import { ABILITIES, ABILITY_LABEL, formatMod, modifier, normalizeCharacter, proficiency, rollFormula, uid } from "@/lib/dnd";
 import { ABILITY_ABOUT, GLOSSARIO } from "@/lib/glossario";
 import {
@@ -39,6 +42,7 @@ type RollToast = RollResult & { label: string; key: number };
 function CharacterEditor() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useUser();
   const [char, setChar] = useState<Character | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "missing">("loading");
   const [dirty, setDirty] = useState(false);
@@ -160,10 +164,26 @@ function CharacterEditor() {
     setMessage("Ficha salva.");
   }
 
+  /** O retrato é salvo na hora, sem depender do botão "Salvar ficha". */
+  async function saveAvatar(url: string | null) {
+    if (!char) return;
+    const { error } = await supabase
+      .from("characters")
+      .update({ avatar_url: url, updated_at: new Date().toISOString() })
+      .eq("id", char.id);
+    if (error) {
+      if (/avatar_url/i.test(error.message))
+        throw new Error("A coluna avatar_url ainda não existe. Rode o supabase/schema.sql atualizado.");
+      throw new Error(error.message);
+    }
+    setChar((c) => (c ? { ...c, avatar_url: url } : c));
+  }
+
   async function remove() {
     if (!char || !confirm(`Excluir a ficha de ${char.name}?`)) return;
     const { error } = await supabase.from("characters").delete().eq("id", char.id);
     if (error) return setMessage(error.message);
+    deleteAvatar(char.avatar_url).catch(() => {});
     setDirty(false);
     router.push("/fichas");
   }
@@ -184,19 +204,6 @@ function CharacterEditor() {
   const { race, sub, cls, bg, bonus, scores, mods, prof, granted, chosen, isProf, skillBonus, allowedChoices, overlap } = derived;
   const hpPct = char.hp_max > 0 ? Math.max(0, Math.min(100, (char.hp_current / char.hp_max) * 100)) : 0;
   const hitDiceLeft = Math.max(0, char.level - d.hitDiceSpent);
-  const abilitiesTouched = ABILITIES.some(({ key }) => char.abilities[key] !== 10);
-
-  const steps = [
-    { label: "Dê um nome", done: char.name.trim() !== "" && char.name !== "Novo personagem", href: "#identidade" },
-    { label: "Escolha a raça", done: Boolean(race && (!race.subraces || sub) && (!race.chooseBonus || d.bonusChoices.length === race.chooseBonus)), href: "#origem" },
-    { label: "Escolha a classe", done: Boolean(cls), href: "#origem" },
-    { label: "Escolha o antecedente", done: Boolean(bg), href: "#origem" },
-    { label: "Distribua os atributos", done: abilitiesTouched, href: "#atributos" },
-    { label: "Marque as perícias", done: allowedChoices > 0 && chosen.size >= allowedChoices, href: "#pericias" },
-    { label: "Ajuste os PV", done: derived.hpSuggestion !== null && char.hp_max === derived.hpSuggestion, href: "#combate" },
-  ];
-  const doneCount = steps.filter((s) => s.done).length;
-
   function toggleSkill(s: SkillKey, on: boolean) {
     const next = new Set(d.skills);
     if (on) next.add(s);
@@ -211,71 +218,54 @@ function CharacterEditor() {
       </Link>
 
       {/* ---------- Identidade ---------- */}
-      <section id="identidade" className="mt-4 grid scroll-mt-20 gap-3 sm:grid-cols-[1fr_140px]">
-        <div>
-          <label htmlFor="nome" className="field-label">
-            Nome do personagem
-          </label>
-          <input
-            id="nome"
-            className="field font-display text-2xl font-bold"
-            value={char.name}
-            onChange={(e) => patch({ name: e.target.value })}
-          />
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <label htmlFor="nivel" className="field-label mb-0">
-              Nível
+      <section id="identidade" className="mt-4 flex scroll-mt-20 flex-col gap-5 sm:flex-row sm:items-center">
+        <PortraitUploader
+          url={char.avatar_url}
+          name={char.name}
+          userId={user.id}
+          characterId={char.id}
+          onChange={saveAvatar}
+        />
+        <div className="grid flex-1 gap-3 sm:grid-cols-[1fr_140px]">
+          <div>
+            <label htmlFor="nome" className="field-label">
+              Nome do personagem
             </label>
-            <Help title="Nível" paragraphs={GLOSSARIO.nivel} />
+            <input
+              id="nome"
+              className="field font-display text-2xl font-bold"
+              value={char.name}
+              onChange={(e) => patch({ name: e.target.value })}
+            />
+            <p className="mt-2 text-sm text-dim">
+              {[sub?.name ?? race?.name, cls?.name, bg?.name].filter(Boolean).join(" · ") || "Escolha raça, classe e antecedente logo abaixo."}
+            </p>
           </div>
-          <select
-            id="nivel"
-            className="field mt-1"
-            value={char.level}
-            onChange={(e) => patch({ level: Number(e.target.value) })}
-          >
-            {Array.from({ length: 20 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {i + 1}º nível
-              </option>
-            ))}
-          </select>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="nivel" className="field-label mb-0">
+                Nível
+              </label>
+              <Help title="Nível" paragraphs={GLOSSARIO.nivel} />
+            </div>
+            <select
+              id="nivel"
+              className="field mt-1"
+              value={char.level}
+              onChange={(e) => patch({ level: Number(e.target.value) })}
+            >
+              {Array.from({ length: 20 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {i + 1}º nível
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </section>
-
-      {/* ---------- Guia ---------- */}
-      <section className="panel mt-6 p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display text-xl font-bold">Seu primeiro personagem, passo a passo</h2>
-          <span className="text-sm font-semibold text-dim">
-            {doneCount} de {steps.length} feitos
-          </span>
-        </div>
-        <ol className="mt-3 flex flex-wrap gap-2">
-          {steps.map((s, i) => (
-            <li key={s.label}>
-              <a
-                href={s.href}
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold ${
-                  s.done ? "border-moss/40 bg-moss/10 text-moss" : "border-rule bg-vellum text-dim hover:text-ink"
-                }`}
-              >
-                <span aria-hidden>{s.done ? "✓" : i + 1}</span>
-                {s.label}
-              </a>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-3 text-sm text-dim">
-          Viu um selo <span className="help-seal pointer-events-none mx-0.5">?</span> ao lado de algum termo? Passe o mouse
-          ou toque nele para entender o que é e de onde vem o número.
-        </p>
       </section>
 
       {/* ---------- Origem ---------- */}
-      <section id="origem" className="mt-8 scroll-mt-20">
+      <section id="origem" className="mt-10 scroll-mt-20">
         <h2 className="font-display text-2xl font-bold">Origem</h2>
         <div className="mt-3 grid gap-4 lg:grid-cols-3">
           {/* Raça */}

@@ -45,6 +45,7 @@ export function normalizeCharacter(row: any): Character {
     id: row.id,
     user_id: row.user_id ?? row.owner_id,
     name: row.name ?? "Sem nome",
+    avatar_url: row.avatar_url ?? null,
     race: row.race ?? "",
     class: row.class ?? "",
     level: Number(row.level ?? 1),

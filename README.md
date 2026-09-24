@@ -71,6 +71,12 @@ Permissões: cada jogador move/remove os próprios tokens; o mestre (dono da mes
 - Os selos "?" mostram um balão ao passar o mouse e abrem uma janela ao clicar/tocar (componente `src/components/Help.tsx`).
 - Sub-raça, antecedente, perícias escolhidas, inspiração e dados de vida gastos ficam na coluna `details` (jsonb).
 
+## Retrato do personagem
+
+Na ficha, a moldura ao lado do nome aceita PNG, JPG ou WEBP (clique, toque ou arraste a imagem). A foto é reduzida no navegador (máx. 640 px), enviada ao **Supabase Storage** no bucket público `avatars`, na pasta `avatars/<user_id>/`, e a URL fica salva na coluna `characters.avatar_url`. O retrato é salvo na hora, sem precisar do botão "Salvar ficha". Ao trocar ou excluir, o arquivo antigo é apagado.
+
+O `schema.sql` cria o bucket e as políticas: qualquer um vê as imagens pela URL, mas cada jogador só envia, troca ou apaga arquivos da própria pasta.
+
 ## Dados
 
 Fórmulas aceitas: `1d20+5`, `2d6+1d4-1`, `d8`, `2d20kh1` (vantagem), `2d20kl1` (desvantagem), `4d6kh3`.
