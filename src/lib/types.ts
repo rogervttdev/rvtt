@@ -10,7 +10,23 @@ export type InventoryItem = {
   /** id do item no catálogo (src/lib/itens.ts), quando veio de lá */
   catalogId?: string;
 };
-export type Spell = { id: string; name: string; level: number; prepared: boolean };
+export type Spell = {
+  id: string;
+  name: string;
+  level: number;
+  prepared: boolean;
+  /** id da magia no SRD (src/lib/magias-srd.ts), quando veio do catálogo */
+  srdId?: string;
+};
+
+/** Controle de usos: recursos de classe, espaços de magia e recursos personalizados (coluna jsonb `resources`). */
+export type Resources = {
+  used: Record<string, number>;
+  custom: { id: string; name: string; max: number; recharge: "short" | "long" }[];
+  /** Espaços gastos por círculo (índice 0 = 1º) */
+  slotsUsed: number[];
+  pactUsed: number;
+};
 
 export type SkillKey =
   | "atletismo"
@@ -63,6 +79,9 @@ export type Character = {
   equipment: Equipment;
   subclass: string | null;
   xp: number;
+  resources: Resources;
+  /** Ferramentas em que o personagem é proficiente (ids do catálogo) */
+  tool_profs: string[];
   coins: { pc: number; pp: number; ep: number; po: number; pl: number };
   /** Nomes dos talentos escolhidos */
   feats: string[];

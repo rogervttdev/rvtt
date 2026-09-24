@@ -16,6 +16,20 @@ import { EquipmentSection } from "@/components/EquipmentSection";
 import { ProgressionTab } from "@/components/ProgressionTab";
 import { BackpackSection, totalLoad } from "@/components/BackpackSection";
 import { carryCapacity } from "@/lib/itens";
+import { classResources } from "@/lib/recursos";
+import { SpellsTab } from "@/components/SpellsTab";
+import { ResourcesTab } from "@/components/ResourcesTab";
+import { ToolsTab } from "@/components/ToolsTab";
+import { RestControls } from "@/components/RestControls";
+
+const TABS = [
+  { id: "ficha", label: "Ficha" },
+  { id: "magias", label: "Magias" },
+  { id: "recursos", label: "Recursos" },
+  { id: "ferramentas", label: "Ferramentas" },
+  { id: "progressao", label: "Progressão" },
+] as const;
+type Tab = (typeof TABS)[number]["id"];
 import {
   BACKGROUNDS,
   CLASSES,
@@ -53,18 +67,17 @@ function CharacterEditor() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [roll, setRoll] = useState<RollToast | null>(null);
-  const [newItem, setNewItem] = useState("");
-  const [newSpell, setNewSpell] = useState({ name: "", level: 0 });
   const rollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [tab, setTab] = useState<"ficha" | "progressao">("ficha");
+  const [tab, setTab] = useState<Tab>("ficha");
 
   useEffect(() => {
-    if (window.location.hash === "#progressao") setTab("progressao");
+    const h = window.location.hash.slice(1) as Tab;
+    if (TABS.some((t) => t.id === h)) setTab(h);
   }, []);
 
-  function changeTab(next: "ficha" | "progressao") {
+  function changeTab(next: Tab) {
     setTab(next);
-    history.replaceState(null, "", next === "progressao" ? "#progressao" : window.location.pathname);
+    history.replaceState(null, "", next === "ficha" ? window.location.pathname : `#${next}`);
   }
 
   useEffect(() => {
@@ -190,6 +203,8 @@ function CharacterEditor() {
       feats: char.feats,
       xp: char.xp,
       coins: char.coins,
+      resources: char.resources,
+      tool_profs: char.tool_profs,
       inventory: char.inventory,
       spells: char.spells,
       notes: char.notes,
@@ -248,6 +263,43 @@ function CharacterEditor() {
   const { race, sub, cls, bg, bonus, scores, mods, prof, granted, chosen, isProf, skillBonus, allowedChoices, overlap } = derived;
   const hpPct = char.hp_max > 0 ? Math.max(0, Math.min(100, (char.hp_current / char.hp_max) * 100)) : 0;
   const hitDiceLeft = Math.max(0, char.level - d.hitDiceSpent);
+  const resourceDefs = classResources({
+    className: cls?.name,
+    subclass: char.subclass,
+    race: race?.name,
+    level: char.level,
+    mods,
+    feats: char.feats,
+  });
+
+  function shortRest(healed: number, diceSpent: number) {
+    if (!char) return;
+    const used = { ...char.resources.used };
+    for (const r of resourceDefs) if (r.recharge === "short") used[r.key] = 0;
+    for (const c of char.resources.custom) if (c.recharge === "short") used[`custom:${c.id}`] = 0;
+    setChar({
+      ...char,
+      hp_current: Math.min(char.hp_max, char.hp_current + healed),
+      details: { ...char.details, hitDiceSpent: char.details.hitDiceSpent + diceSpent },
+      resources: { ...char.resources, used, pactUsed: 0 },
+    });
+    setDirty(true);
+    setMessage(`Descanso curto concluído${healed ? `: +${healed} PV` : ""}. Recursos de descanso curto recuperados. Lembre de salvar.`);
+  }
+
+  function longRest() {
+    if (!char) return;
+    const recovered = Math.min(char.details.hitDiceSpent, Math.max(1, Math.floor(char.level / 2)));
+    setChar({
+      ...char,
+      hp_current: char.hp_max,
+      details: { ...char.details, hitDiceSpent: char.details.hitDiceSpent - recovered },
+      resources: { ...char.resources, used: {}, slotsUsed: [], pactUsed: 0 },
+    });
+    setDirty(true);
+    setMessage(`Descanso longo concluído: PV cheios, ${recovered} dado(s) de vida, espaços de magia e recursos recuperados. Lembre de salvar.`);
+  }
+
   function toggleSkill(s: SkillKey, on: boolean) {
     const next = new Set(d.skills);
     if (on) next.add(s);
@@ -312,14 +364,65 @@ function CharacterEditor() {
       </section>
 
       {/* ---------- Abas ---------- */}
-      <div className="sheet-tabs mt-8" role="tablist" aria-label="Partes da ficha">
-        <button role="tab" className="sheet-tab" aria-selected={tab === "ficha"} onClick={() => changeTab("ficha")}>
-          Ficha
-        </button>
-        <button role="tab" className="sheet-tab" aria-selected={tab === "progressao"} onClick={() => changeTab("progressao")}>
-          Progressão e talentos
-        </button>
+      <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
+        <div className="sheet-tabs min-w-0 flex-1 overflow-x-auto" role="tablist" aria-label="Partes da ficha">
+          {TABS.map((t) => (
+            <button key={t.id} role="tab" className="sheet-tab" aria-selected={tab === t.id} onClick={() => changeTab(t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <RestControls
+          hitDie={cls?.hitDie}
+          level={char.level}
+          conMod={mods.con}
+          hitDiceSpent={d.hitDiceSpent}
+          hp={char.hp_current}
+          hpMax={char.hp_max}
+          isWarlock={cls?.name === "Bruxo"}
+          isWizard={cls?.name === "Mago"}
+          onShortRest={shortRest}
+          onLongRest={longRest}
+        />
       </div>
+
+      {tab === "magias" && (
+        <SpellsTab
+          spells={char.spells}
+          cls={cls}
+          subclass={char.subclass ?? ""}
+          level={char.level}
+          mods={mods}
+          prof={prof}
+          resources={char.resources}
+          onSpells={(spells) => patch({ spells })}
+          onResources={(resources) => patch({ resources })}
+          onRoll={doRoll}
+          onMessage={setMessage}
+        />
+      )}
+
+      {tab === "recursos" && (
+        <ResourcesTab
+          defs={resourceDefs}
+          resources={char.resources}
+          inspiration={d.inspiration}
+          onInspiration={(inspiration) => patchDetails({ inspiration })}
+          onResources={(resources) => patch({ resources })}
+        />
+      )}
+
+      {tab === "ferramentas" && (
+        <ToolsTab
+          toolProfs={char.tool_profs}
+          inventory={char.inventory}
+          prof={prof}
+          className={cls?.name}
+          background={bg?.name}
+          onToolProfs={(tool_profs) => patch({ tool_profs })}
+          onInventory={(inventory) => patch({ inventory })}
+        />
+      )}
 
       {tab === "progressao" && (
         <ProgressionTab
@@ -701,26 +804,7 @@ function CharacterEditor() {
                   {cls ? ` d${cls.hitDie}` : ""}
                 </span>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button
-                  className="btn btn-ghost border border-rule"
-                  disabled={!cls || hitDiceLeft === 0}
-                  onClick={() => {
-                    if (!cls) return;
-                    patchDetails({ hitDiceSpent: d.hitDiceSpent + 1 });
-                    doRoll("Dado de vida (cura)", mods.con, `1d${cls.hitDie}${mods.con >= 0 ? "+" : ""}${mods.con}`);
-                  }}
-                >
-                  Gastar e rolar cura
-                </button>
-                <button
-                  className="btn btn-ghost border border-rule"
-                  disabled={d.hitDiceSpent === 0}
-                  onClick={() => patchDetails({ hitDiceSpent: Math.max(0, d.hitDiceSpent - Math.max(1, Math.floor(char.level / 2))) })}
-                >
-                  Descanso longo
-                </button>
-              </div>
+              <p className="mt-2 text-xs text-dim">Gaste e recupere dados de vida com os botões de Descanso curto e Descanso longo, acima das abas.</p>
             </div>
           </div>
 
@@ -906,53 +990,6 @@ function CharacterEditor() {
         onInventory={(inventory) => patch({ inventory })}
         onCoins={(coins) => patch({ coins })}
       />
-
-      {/* ---------- Magias ---------- */}
-      <div className="mt-10 grid gap-6 md:grid-cols-2">
-        <section>
-          <h2 className="font-display text-2xl font-bold">Magias</h2>
-          <form
-            className="mt-3 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!newSpell.name.trim()) return;
-              patch({ spells: [...char.spells, { id: uid(), name: newSpell.name.trim(), level: newSpell.level, prepared: true }] });
-              setNewSpell({ name: "", level: newSpell.level });
-            }}
-          >
-            <input className="field" value={newSpell.name} onChange={(e) => setNewSpell({ ...newSpell, name: e.target.value })} placeholder="Mísseis mágicos" aria-label="Nova magia" />
-            <select className="field w-28" value={newSpell.level} onChange={(e) => setNewSpell({ ...newSpell, level: Number(e.target.value) })} aria-label="Nível da magia">
-              {Array.from({ length: 10 }, (_, l) => (
-                <option key={l} value={l}>
-                  {l === 0 ? "Truque" : `Nível ${l}`}
-                </option>
-              ))}
-            </select>
-            <button className="btn btn-primary">Adicionar</button>
-          </form>
-          <ul className="mt-3 divide-y divide-rule rounded-lg border border-rule bg-vellum">
-            {char.spells.length === 0 && <li className="px-3 py-3 text-sm text-dim">Nenhuma magia. Classes como Guerreiro e Ladino podem deixar em branco.</li>}
-            {[...char.spells]
-              .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
-              .map((s) => (
-                <li key={s.id} className="flex items-center gap-3 px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={s.prepared}
-                    className="h-4 w-4 accent-[#a8431f]"
-                    aria-label={`${s.name} preparada`}
-                    onChange={(e) => patch({ spells: char.spells.map((x) => (x.id === s.id ? { ...x, prepared: e.target.checked } : x)) })}
-                  />
-                  <span className={`flex-1 ${s.prepared ? "" : "text-dim"}`}>{s.name}</span>
-                  <span className="text-sm text-dim">{s.level === 0 ? "Truque" : `Nv ${s.level}`}</span>
-                  <button className="btn btn-danger px-2 py-1" onClick={() => patch({ spells: char.spells.filter((x) => x.id !== s.id) })}>
-                    Remover
-                  </button>
-                </li>
-              ))}
-          </ul>
-        </section>
-      </div>
 
       <section className="mt-10">
         <label htmlFor="notas" className="font-display text-2xl font-bold">

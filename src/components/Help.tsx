@@ -15,8 +15,11 @@ export function Help({
   paragraphs,
   className = "",
   label,
+  preview,
 }: {
   title: string;
+  /** Conteúdo resumido só para o balão (o conteúdo completo vai para a janela) */
+  preview?: React.ReactNode;
   /** Texto do gatilho; se ausente, mostra o selo "?" */
   label?: React.ReactNode;
   /** Texto fixo (parágrafos) */
@@ -89,7 +92,7 @@ export function Help({
           style={{ left: tip.left, top: tip.top, width: tip.width, transform: tip.below ? "none" : "translateY(-100%)" }}
         >
           <p className="mb-1.5 font-display text-lg font-bold text-brass-light">{title}</p>
-          <div className="space-y-1.5">{body}</div>
+          <div className="space-y-1.5">{preview ?? body}</div>
           <p className="mt-2 text-xs text-foam/60">Clique para ler com calma.</p>
         </div>
       )}

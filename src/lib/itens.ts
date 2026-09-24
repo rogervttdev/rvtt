@@ -13,11 +13,21 @@ export const ITEM_CATEGORY_LABEL: Record<ItemCategory, string> = {
   roupas: "Roupas",
   municao: "Munição",
   consumiveis: "Poções e alquimia",
-  ferramentas: "Ferramentas",
-  kits: "Kits",
+  ferramentas: "Ferramentas e instrumentos",
+  kits: "Kits de aventura",
 };
 
-export type ItemDef = { id: string; name: string; category: ItemCategory; price: string; weight: number; desc: string };
+export type ToolGroup = "artesao" | "kit" | "jogo" | "instrumento";
+export type ItemDef = {
+  id: string;
+  name: string;
+  category: ItemCategory;
+  price: string;
+  weight: number;
+  desc: string;
+  /** Só para ferramentas: tipo, usado na aba Ferramentas */
+  tool?: ToolGroup;
+};
 
 export const ITEMS: ItemDef[] = [
   // Equipamento de aventura
@@ -106,27 +116,80 @@ export const ITEMS: ItemDef[] = [
   { id: "fogo-alquimista", name: "Fogo de alquimista (frasco)", category: "consumiveis", price: "50 po", weight: 1, desc: "Líquido que pega fogo no ar: o alvo leva 1d4 de fogo a cada turno até apagar as chamas." },
   { id: "agua-benta", name: "Água benta (frasco)", category: "consumiveis", price: "25 po", weight: 1, desc: "Arremessada em mortos-vivos ou corruptores, causa 2d6 de dano radiante." },
   { id: "veneno", name: "Veneno básico (frasco)", category: "consumiveis", price: "100 po", weight: 0, desc: "Passado numa arma ou munição, o alvo resiste com Constituição (CD 10) ou leva 1d4 de veneno extra. Dura 1 minuto." },
-  // Ferramentas
-  { id: "ferramentas-ladrao", name: "Ferramentas de ladrão", category: "ferramentas", price: "25 po", weight: 1, desc: "Gazuas e limas para abrir fechaduras e desarmar armadilhas. Com proficiência, soma o bônus no teste." },
-  { id: "ferramentas-navegador", name: "Ferramentas de navegador", category: "ferramentas", price: "25 po", weight: 2, desc: "Instrumentos para traçar rotas e não se perder no mar." },
-  { id: "suprimentos-alquimista", name: "Suprimentos de alquimista", category: "ferramentas", price: "50 po", weight: 8, desc: "Frascos e reagentes para identificar e preparar substâncias." },
-  { id: "ferramentas-ferreiro", name: "Ferramentas de ferreiro", category: "ferramentas", price: "20 po", weight: 8, desc: "Para consertar e forjar armas e armaduras de metal." },
-  { id: "ferramentas-carpinteiro", name: "Ferramentas de carpinteiro", category: "ferramentas", price: "8 po", weight: 6, desc: "Serrote, martelo e pregos para construir e consertar madeira." },
-  { id: "utensilios-cozinheiro", name: "Utensílios de cozinheiro", category: "ferramentas", price: "1 po", weight: 8, desc: "Panelas e facas para preparar boas refeições." },
-  { id: "suprimentos-caligrafia", name: "Suprimentos de caligrafia", category: "ferramentas", price: "10 po", weight: 5, desc: "Penas, tintas e papéis para escrita bonita e documentos." },
-  { id: "suprimentos-pintor", name: "Suprimentos de pintor", category: "ferramentas", price: "10 po", weight: 5, desc: "Tintas e pincéis para retratos e mapas." },
-  { id: "jogo-dados", name: "Jogo de dados", category: "ferramentas", price: "1 pp", weight: 0, desc: "Para apostar na taverna." },
-  { id: "baralho", name: "Baralho", category: "ferramentas", price: "5 pp", weight: 0, desc: "Cartas para jogos de sorte e blefe." },
+  // Ferramentas de artesão
+  { id: "suprimentos-alquimista", name: "Suprimentos de alquimista", category: "ferramentas", tool: "artesao", price: "50 po", weight: 8, desc: "Frascos, almofariz e reagentes. Com proficiência, identifica e prepara substâncias como ácido, fogo de alquimista e antídotos." },
+  { id: "suprimentos-cervejeiro", name: "Suprimentos de cervejeiro", category: "ferramentas", tool: "artesao", price: "20 po", weight: 9, desc: "Para fazer cerveja e purificar água. Todo taverneiro que se preze tem um." },
+  { id: "suprimentos-caligrafia", name: "Suprimentos de caligrafia", category: "ferramentas", tool: "artesao", price: "10 po", weight: 5, desc: "Penas, tintas e pergaminhos para escrita bonita, documentos e decifrar escritas antigas." },
+  { id: "ferramentas-carpinteiro", name: "Ferramentas de carpinteiro", category: "ferramentas", tool: "artesao", price: "8 po", weight: 6, desc: "Serrote, martelo e pregos para construir, consertar e reforçar portas e barricadas." },
+  { id: "ferramentas-cartografo", name: "Ferramentas de cartógrafo", category: "ferramentas", tool: "artesao", price: "15 po", weight: 6, desc: "Instrumentos de medição e tintas para desenhar mapas precisos das explorações." },
+  { id: "ferramentas-sapateiro", name: "Ferramentas de sapateiro", category: "ferramentas", tool: "artesao", price: "5 po", weight: 5, desc: "Para fazer e consertar calçados (e esconder objetos no salto)." },
+  { id: "utensilios-cozinheiro", name: "Utensílios de cozinheiro", category: "ferramentas", tool: "artesao", price: "1 po", weight: 8, desc: "Panelas e facas para boas refeições, que animam o grupo no descanso." },
+  { id: "ferramentas-vidreiro", name: "Ferramentas de vidreiro", category: "ferramentas", tool: "artesao", price: "30 po", weight: 5, desc: "Para trabalhar vidro: frascos, lentes e vitrais." },
+  { id: "ferramentas-joalheiro", name: "Ferramentas de joalheiro", category: "ferramentas", tool: "artesao", price: "25 po", weight: 2, desc: "Para lapidar gemas, avaliar joias e reconhecer pedras preciosas falsas." },
+  { id: "ferramentas-coureiro", name: "Ferramentas de coureiro", category: "ferramentas", tool: "artesao", price: "5 po", weight: 5, desc: "Para trabalhar couro: bolsas, arreios e armaduras leves." },
+  { id: "ferramentas-pedreiro", name: "Ferramentas de pedreiro", category: "ferramentas", tool: "artesao", price: "10 po", weight: 8, desc: "Para trabalhar pedra e perceber passagens ou pontos fracos em construções." },
+  { id: "suprimentos-pintor", name: "Suprimentos de pintor", category: "ferramentas", tool: "artesao", price: "10 po", weight: 5, desc: "Tintas e pincéis para retratos, mapas e reproduzir símbolos." },
+  { id: "ferramentas-oleiro", name: "Ferramentas de oleiro", category: "ferramentas", tool: "artesao", price: "10 po", weight: 3, desc: "Para fazer potes, jarras e objetos de cerâmica." },
+  { id: "ferramentas-ferreiro", name: "Ferramentas de ferreiro", category: "ferramentas", tool: "artesao", price: "20 po", weight: 8, desc: "Martelo, tenazes e bigorna portátil para consertar e forjar armas e armaduras de metal." },
+  { id: "ferramentas-funileiro", name: "Ferramentas de funileiro", category: "ferramentas", tool: "artesao", price: "50 po", weight: 10, desc: "Para consertar objetos de metal fino e pequenos mecanismos." },
+  { id: "ferramentas-tecelao", name: "Ferramentas de tecelão", category: "ferramentas", tool: "artesao", price: "1 po", weight: 5, desc: "Para tecer panos e consertar roupas, velas e redes." },
+  { id: "ferramentas-entalhador", name: "Ferramentas de entalhador", category: "ferramentas", tool: "artesao", price: "1 po", weight: 5, desc: "Facas para entalhar madeira: flechas, figuras e cabos." },
+  // Kits e ferramentas especializadas
+  { id: "ferramentas-ladrao", name: "Ferramentas de ladrão", category: "ferramentas", tool: "kit", price: "25 po", weight: 1, desc: "Gazuas, limas e espelhinho para abrir fechaduras e desarmar armadilhas. Com proficiência, soma o bônus no teste de Destreza." },
+  { id: "kit-disfarce", name: "Kit de disfarce", category: "ferramentas", tool: "kit", price: "25 po", weight: 3, desc: "Maquiagem, tintas de cabelo e acessórios para criar disfarces convincentes." },
+  { id: "kit-falsificacao", name: "Kit de falsificação", category: "ferramentas", tool: "kit", price: "15 po", weight: 5, desc: "Papéis, tintas e selos para falsificar documentos e assinaturas." },
+  { id: "kit-herbalismo", name: "Kit de herbalismo", category: "ferramentas", tool: "kit", price: "5 po", weight: 3, desc: "Para identificar plantas e preparar antídotos e Poções de Cura." },
+  { id: "ferramentas-navegador", name: "Ferramentas de navegador", category: "ferramentas", tool: "kit", price: "25 po", weight: 2, desc: "Sextante, bússola e cartas para traçar rotas e não se perder no mar." },
+  { id: "kit-venenos", name: "Kit de venenos", category: "ferramentas", tool: "kit", price: "50 po", weight: 2, desc: "Frascos e ferramentas para preparar e aplicar venenos com segurança." },
+  // Jogos
+  { id: "jogo-dados", name: "Jogo de dados", category: "ferramentas", tool: "jogo", price: "1 pp", weight: 0, desc: "Para apostar na taverna. Com proficiência, soma o bônus para ganhar (ou trapacear)." },
+  { id: "baralho", name: "Baralho", category: "ferramentas", tool: "jogo", price: "5 pp", weight: 0, desc: "Cartas para jogos de sorte e blefe." },
+  { id: "xadrez-dragao", name: "Xadrez de dragão", category: "ferramentas", tool: "jogo", price: "1 po", weight: 0.5, desc: "Jogo de tabuleiro de estratégia, popular entre nobres e soldados." },
+  { id: "tres-dragoes", name: "Ante dos Três Dragões", category: "ferramentas", tool: "jogo", price: "1 po", weight: 0, desc: "Jogo de cartas de apostas muito comum nas tavernas." },
+  // Instrumentos musicais
+  { id: "alaude-item", name: "Alaúde", category: "ferramentas", tool: "instrumento", price: "35 po", weight: 2, desc: "Instrumento de cordas, o favorito dos bardos. Com proficiência, soma o bônus em testes de Atuação tocando." },
+  { id: "charamela", name: "Charamela", category: "ferramentas", tool: "instrumento", price: "2 po", weight: 1, desc: "Instrumento de sopro de som forte." },
+  { id: "flauta-item", name: "Flauta", category: "ferramentas", tool: "instrumento", price: "2 po", weight: 1, desc: "Instrumento de sopro leve e barato." },
+  { id: "flauta-pa", name: "Flauta de pã", category: "ferramentas", tool: "instrumento", price: "12 po", weight: 2, desc: "Tubos de madeira de tamanhos diferentes, som suave e pastoral." },
+  { id: "gaita-foles", name: "Gaita de foles", category: "ferramentas", tool: "instrumento", price: "30 po", weight: 6, desc: "Instrumento de sopro barulhento, ótimo para marchas." },
+  { id: "lira-item", name: "Lira", category: "ferramentas", tool: "instrumento", price: "30 po", weight: 2, desc: "Pequena harpa de mão." },
+  { id: "salterio", name: "Saltério", category: "ferramentas", tool: "instrumento", price: "25 po", weight: 10, desc: "Instrumento de cordas tocado com pequenos martelos." },
+  { id: "tambor-item", name: "Tambor", category: "ferramentas", tool: "instrumento", price: "6 po", weight: 3, desc: "Percussão para ritmos de batalha e festas." },
+  { id: "trompa", name: "Trompa", category: "ferramentas", tool: "instrumento", price: "3 po", weight: 2, desc: "Instrumento de sopro para sinais de caça e guerra." },
+  { id: "viola", name: "Viola", category: "ferramentas", tool: "instrumento", price: "30 po", weight: 1, desc: "Instrumento de cordas tocado com arco." },
   // Kits
   { id: "kit-curandeiro", name: "Kit de curandeiro", category: "kits", price: "5 po", weight: 3, desc: "Bandagens e ervas com 10 usos: estabiliza um aliado caído a 0 PV sem precisar de teste de Medicina." },
   { id: "kit-escalada", name: "Kit de escalada", category: "kits", price: "25 po", weight: 12, desc: "Pitões, luvas e arnês: dá vantagem em testes para escalar e impede quedas longas." },
-  { id: "kit-herbalismo", name: "Kit de herbalismo", category: "kits", price: "5 po", weight: 3, desc: "Para identificar plantas e preparar antídotos e poções de cura." },
-  { id: "kit-disfarce", name: "Kit de disfarce", category: "kits", price: "25 po", weight: 3, desc: "Maquiagem, tintas de cabelo e acessórios para mudar a aparência." },
-  { id: "kit-falsificacao", name: "Kit de falsificação", category: "kits", price: "15 po", weight: 5, desc: "Papéis, tintas e selos para falsificar documentos." },
-  { id: "kit-venenos", name: "Kit de venenos", category: "kits", price: "50 po", weight: 2, desc: "Frascos e ferramentas para preparar e aplicar venenos com segurança." },
 ];
 
 export const findItem = (id?: string) => ITEMS.find((i) => i.id === id);
+
+export const TOOLS = ITEMS.filter((i) => i.tool);
+export const TOOL_GROUP_LABEL: Record<ToolGroup, string> = {
+  artesao: "Ferramentas de artesão",
+  kit: "Kits especializados",
+  jogo: "Jogos",
+  instrumento: "Instrumentos musicais",
+};
+
+/** De onde costumam vir as proficiências em ferramentas (Livro do Jogador). */
+export const TOOL_SOURCES: Record<string, string> = {
+  Bardo: "três instrumentos musicais à escolha",
+  Druida: "kit de herbalismo",
+  Ladino: "ferramentas de ladrão",
+  Monge: "um tipo de ferramenta de artesão ou um instrumento musical",
+  "Artesão de Guilda": "um tipo de ferramenta de artesão",
+  Artista: "kit de disfarce e um instrumento musical",
+  Charlatão: "kit de disfarce e kit de falsificação",
+  Criminoso: "um jogo e ferramentas de ladrão",
+  Eremita: "kit de herbalismo",
+  Forasteiro: "um instrumento musical",
+  "Herói do Povo": "um tipo de ferramenta de artesão e veículos terrestres",
+  Marinheiro: "ferramentas de navegador e veículos aquáticos",
+  Nobre: "um jogo",
+  Órfão: "kit de disfarce e ferramentas de ladrão",
+  Soldado: "um jogo e veículos terrestres",
+};
 
 /** Pacotes de equipamento do Livro do Jogador: adicionam cada item separado na mochila. */
 export const PACKS: { id: string; name: string; price: string; desc: string; contents: [string, number][] }[] = [

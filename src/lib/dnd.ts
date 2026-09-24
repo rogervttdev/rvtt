@@ -49,6 +49,13 @@ export function normalizeCharacter(row: any): Character {
     alignment: row.alignment ?? "",
     subclass: row.subclass ?? "",
     xp: Math.max(0, Number(row.xp ?? 0)),
+    resources: {
+      used: row.resources?.used && typeof row.resources.used === "object" ? row.resources.used : {},
+      custom: Array.isArray(row.resources?.custom) ? row.resources.custom : [],
+      slotsUsed: Array.isArray(row.resources?.slotsUsed) ? row.resources.slotsUsed : [],
+      pactUsed: Number(row.resources?.pactUsed ?? 0),
+    },
+    tool_profs: Array.isArray(row.tool_profs) ? row.tool_profs : [],
     coins: {
       pc: Number(row.coins?.pc ?? 0),
       pp: Number(row.coins?.pp ?? 0),
