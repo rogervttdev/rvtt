@@ -53,6 +53,9 @@ export type Character = {
   avatar_url: string | null;
   alignment: string | null;
   equipment: Equipment;
+  subclass: string | null;
+  /** Nomes dos talentos escolhidos */
+  feats: string[];
   race: string | null;
   class: string | null;
   level: number;

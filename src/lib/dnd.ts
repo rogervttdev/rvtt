@@ -47,6 +47,8 @@ export function normalizeCharacter(row: any): Character {
     name: row.name ?? "Sem nome",
     avatar_url: row.avatar_url ?? null,
     alignment: row.alignment ?? "",
+    subclass: row.subclass ?? "",
+    feats: Array.isArray(row.feats) ? row.feats.filter((f: unknown) => typeof f === "string") : [],
     equipment: {
       armor: row.equipment?.armor ?? null,
       shield: Boolean(row.equipment?.shield),

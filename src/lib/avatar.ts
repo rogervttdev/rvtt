@@ -1,7 +1,9 @@
 import { supabase } from "./supabase";
 
 /** Bucket público do Supabase Storage onde ficam os retratos */
-export const AVATAR_BUCKET = "avatars";
+export const AVATAR_BUCKET = "characters";
+/** Bucket usado em versões anteriores (para conseguir apagar retratos antigos) */
+const LEGACY_BUCKETS = ["avatars"];
 export const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 export const MAX_UPLOAD_MB = 10;
 
@@ -36,15 +38,18 @@ async function shrink(file: File, maxSide = 640): Promise<Blob> {
   }
 }
 
-/** Caminho do arquivo dentro do bucket a partir da URL pública (para apagar o antigo). */
-function pathFromUrl(url: string) {
-  const marker = `/object/public/${AVATAR_BUCKET}/`;
-  const i = url.indexOf(marker);
-  return i >= 0 ? decodeURIComponent(url.slice(i + marker.length).split("?")[0]) : null;
+/** Bucket e caminho do arquivo a partir da URL pública (para apagar o antigo). */
+function locate(url: string) {
+  for (const bucket of [AVATAR_BUCKET, ...LEGACY_BUCKETS]) {
+    const marker = `/object/public/${bucket}/`;
+    const i = url.indexOf(marker);
+    if (i >= 0) return { bucket, path: decodeURIComponent(url.slice(i + marker.length).split("?")[0]) };
+  }
+  return null;
 }
 
 /**
- * Envia o retrato para `avatars/<user_id>/<character_id>-<data>.<ext>` e devolve a URL pública.
+ * Envia o retrato para `characters/<user_id>/<character_id>-<data>.<ext>` e devolve a URL pública.
  * A primeira pasta ser o user_id é o que as políticas de segurança do Storage conferem.
  */
 export async function uploadAvatar(file: File, userId: string, characterId: string) {
@@ -70,6 +75,6 @@ export async function uploadAvatar(file: File, userId: string, characterId: stri
 
 /** Remove um retrato antigo do Storage (se falhar, não atrapalha o jogador). */
 export async function deleteAvatar(url: string | null | undefined) {
-  const path = url ? pathFromUrl(url) : null;
-  if (path) await supabase.storage.from(AVATAR_BUCKET).remove([path]);
+  const found = url ? locate(url) : null;
+  if (found) await supabase.storage.from(found.bucket).remove([found.path]);
 }

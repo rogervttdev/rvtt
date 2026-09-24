@@ -13,6 +13,7 @@ import { ABILITIES, ABILITY_LABEL, formatMod, modifier, normalizeCharacter, prof
 import { ABILITY_ABOUT, ALIGNMENTS, GLOSSARIO } from "@/lib/glossario";
 import { computeAc, findArmor } from "@/lib/equipamento";
 import { EquipmentSection } from "@/components/EquipmentSection";
+import { ProgressionTab } from "@/components/ProgressionTab";
 import {
   BACKGROUNDS,
   CLASSES,
@@ -53,6 +54,16 @@ function CharacterEditor() {
   const [newItem, setNewItem] = useState("");
   const [newSpell, setNewSpell] = useState({ name: "", level: 0 });
   const rollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [tab, setTab] = useState<"ficha" | "progressao">("ficha");
+
+  useEffect(() => {
+    if (window.location.hash === "#progressao") setTab("progressao");
+  }, []);
+
+  function changeTab(next: "ficha" | "progressao") {
+    setTab(next);
+    history.replaceState(null, "", next === "progressao" ? "#progressao" : window.location.pathname);
+  }
 
   useEffect(() => {
     supabase
@@ -78,7 +89,6 @@ function CharacterEditor() {
   const derived = useMemo(() => {
     if (!char) return null;
     const d = char.details;
-  const alignment = ALIGNMENTS.find((a) => a.name === char.alignment);
     const race = findRace(char.race);
     const sub = race?.subraces?.find((s) => s.name === d.subrace);
     const cls = findClass(char.class);
@@ -119,8 +129,23 @@ function CharacterEditor() {
         return armor?.strength && scores.str < armor.strength && race?.name !== "Anão" ? 3 : 0;
       })(),
       speed: speedFor(race, sub),
-      hpSuggestion: suggestedHp(cls, char.level, mods.con, sub),
-      passive: 10 + skillBonus("percepcao"),
+      hpSuggestion: (() => {
+        const base = suggestedHp(cls, char.level, mods.con, sub);
+        return base === null ? null : base + (char.feats.includes("Robusto") ? 2 * char.level : 0);
+      })(),
+      initiative: mods.dex + (char.feats.includes("Alerta") ? 5 : 0),
+      passive: 10 + skillBonus("percepcao") + (char.feats.includes("Observador") ? 5 : 0),
+      speedParts: (() => {
+        const parts: { label: string; value: number }[] = [];
+        const armor = findArmor(char.equipment.armor);
+        if (cls?.name === "Bárbaro" && char.level >= 5 && armor?.category !== "pesada") parts.push({ label: "Movimento Rápido", value: 3 });
+        if (cls?.name === "Monge" && char.level >= 2 && !armor && !char.equipment.shield) {
+          const m = char.level >= 18 ? 9 : char.level >= 14 ? 7.5 : char.level >= 10 ? 6 : char.level >= 6 ? 4.5 : 3;
+          parts.push({ label: "Movimento sem Armadura", value: m });
+        }
+        if (char.feats.includes("Mobilidade")) parts.push({ label: "talento Mobilidade", value: 3 });
+        return parts;
+      })(),
     };
   }, [char]);
 
@@ -159,6 +184,8 @@ function CharacterEditor() {
       ac: derived?.ac.total ?? char.ac,
       alignment: char.alignment || null,
       equipment: char.equipment,
+      subclass: char.subclass || null,
+      feats: char.feats,
       inventory: char.inventory,
       spells: char.spells,
       notes: char.notes,
@@ -209,6 +236,7 @@ function CharacterEditor() {
     );
 
   const d = char.details;
+  const totalSpeed = derived.speed + derived.speedParts.reduce((t, p) => t + p.value, 0) - derived.armorSpeedPenalty;
   const alignment = ALIGNMENTS.find((a) => a.name === char.alignment);
   const { race, sub, cls, bg, bonus, scores, mods, prof, granted, chosen, isProf, skillBonus, allowedChoices, overlap } = derived;
   const hpPct = char.hp_max > 0 ? Math.max(0, Math.min(100, (char.hp_current / char.hp_max) * 100)) : 0;
@@ -247,7 +275,7 @@ function CharacterEditor() {
               onChange={(e) => patch({ name: e.target.value })}
             />
             <p className="mt-2 text-sm text-dim">
-              {[sub?.name ?? race?.name, cls?.name, bg?.name].filter(Boolean).join(" · ") || "Escolha raça, classe e antecedente logo abaixo."}
+              {[sub?.name ?? race?.name, cls ? (char.subclass ? `${cls.name} (${char.subclass})` : cls.name) : null, bg?.name, char.alignment].filter(Boolean).join(" · ") || "Escolha raça, classe e antecedente logo abaixo."}
             </p>
           </div>
           <div>
@@ -273,6 +301,29 @@ function CharacterEditor() {
         </div>
       </section>
 
+      {/* ---------- Abas ---------- */}
+      <div className="sheet-tabs mt-8" role="tablist" aria-label="Partes da ficha">
+        <button role="tab" className="sheet-tab" aria-selected={tab === "ficha"} onClick={() => changeTab("ficha")}>
+          Ficha
+        </button>
+        <button role="tab" className="sheet-tab" aria-selected={tab === "progressao"} onClick={() => changeTab("progressao")}>
+          Progressão e talentos
+        </button>
+      </div>
+
+      {tab === "progressao" && (
+        <ProgressionTab
+          cls={cls}
+          level={char.level}
+          subclass={char.subclass ?? ""}
+          feats={char.feats}
+          onSubclass={(subclass) => patch({ subclass })}
+          onFeats={(feats) => patch({ feats })}
+        />
+      )}
+
+      {tab === "ficha" && (
+      <>
       {/* ---------- Origem ---------- */}
       <section id="origem" className="mt-10 scroll-mt-20">
         <h2 className="font-display text-2xl font-bold">Origem</h2>
@@ -488,7 +539,7 @@ function CharacterEditor() {
           <h2 className="font-display text-2xl font-bold">Atributos</h2>
           <Help title="Atributos" paragraphs={GLOSSARIO.atributos} />
           <span className="ml-2 flex items-center gap-1.5 text-sm text-dim">
-            Modificador <Help title="Modificador" paragraphs={GLOSSARIO.modificador} />
+            Modificador (selo) <Help title="Modificador" paragraphs={GLOSSARIO.modificador} />
           </span>
           <div className="ml-auto flex items-center gap-1.5">
             <button
@@ -507,7 +558,7 @@ function CharacterEditor() {
           {ABILITIES.map(({ key, label, hint }) => {
             const b = bonus[key] ?? 0;
             return (
-              <div key={key} className="panel flex flex-col items-center p-3 text-center">
+              <div key={key} className="panel ability-card flex flex-col items-center px-3 pb-3 pt-3 text-center">
                 <div className="flex items-center gap-1">
                   <span className="font-bold">{label}</span>
                   <Help title={label}>
@@ -519,16 +570,17 @@ function CharacterEditor() {
                     </HelpCalc>
                   </Help>
                 </div>
+                <span className="ability-total" aria-label={`Valor total de ${label}: ${scores[key]}`}>
+                  {scores[key]}
+                </span>
                 <button
-                  className="my-1 font-display text-4xl font-bold text-ember-deep hover:text-ember"
+                  className="mod-seal"
                   onClick={() => doRoll(`Teste de ${label}`, mods[key])}
-                  aria-label={`Rolar teste de ${label} (${formatMod(mods[key])})`}
+                  aria-label={`Modificador ${formatMod(mods[key])}. Rolar teste de ${label}`}
+                  title="Modificador: toque para rolar um teste"
                 >
                   {formatMod(mods[key])}
                 </button>
-                <span className="text-sm">
-                  valor <strong className="text-base">{scores[key]}</strong>
-                </span>
                 <div className="mt-2 flex items-center gap-1">
                   <input
                     className="field w-14 px-1 py-1 text-center"
@@ -549,7 +601,7 @@ function CharacterEditor() {
           })}
         </div>
         <p className="mt-2 flex items-center gap-1.5 text-sm text-dim">
-          A caixinha é o valor base; o bônus da raça é somado sozinho.
+          O número grande é o valor total; o selo embaixo é o modificador (toque para rolar). A caixinha é o valor base, e o bônus da raça é somado sozinho.
           <Help title="Valor base e bônus da raça" paragraphs={GLOSSARIO.base_racial} />
         </p>
       </section>
@@ -568,7 +620,7 @@ function CharacterEditor() {
                     <HelpCalc>
                       Sugestão: d{cls.hitDie} cheio ({cls.hitDie}) {formatMod(mods.con)} de Constituição
                       {char.level > 1 ? ` + ${char.level - 1} nível(is) × (${Math.floor(cls.hitDie / 2) + 1} ${formatMod(mods.con)})` : ""}
-                      {sub?.hpPerLevel ? ` + ${char.level} da Tenacidade anã` : ""} = {derived.hpSuggestion}
+                      {sub?.hpPerLevel ? ` + ${char.level} da Tenacidade anã` : ""}{char.feats.includes("Robusto") ? ` + ${2 * char.level} do talento Robusto` : ""} = {derived.hpSuggestion}
                     </HelpCalc>
                   )}
                 </Help>
@@ -666,21 +718,21 @@ function CharacterEditor() {
             </a>
           </StatBox>
 
-          <StatBox label="Iniciativa" help={<Help title="Iniciativa" paragraphs={GLOSSARIO.iniciativa}><HelpCalc>Sua iniciativa é o modificador de Destreza: {formatMod(mods.dex)}.</HelpCalc></Help>}>
+          <StatBox label="Iniciativa" help={<Help title="Iniciativa" paragraphs={GLOSSARIO.iniciativa}><HelpCalc>{formatMod(mods.dex)} de Destreza{char.feats.includes("Alerta") ? " +5 do talento Alerta" : ""} = {formatMod(derived.initiative)}</HelpCalc></Help>}>
             <button
               className="text-left font-display text-4xl font-bold text-ember-deep hover:text-ember"
-              onClick={() => doRoll("Iniciativa", mods.dex)}
-              aria-label={`Rolar iniciativa (${formatMod(mods.dex)})`}
+              onClick={() => doRoll("Iniciativa", derived.initiative)}
+              aria-label={`Rolar iniciativa (${formatMod(derived.initiative)})`}
             >
-              {formatMod(mods.dex)}
+              {formatMod(derived.initiative)}
             </button>
             <span className="text-xs text-dim">toque para rolar</span>
           </StatBox>
 
-          <StatBox label="Deslocamento" help={<Help title="Deslocamento" paragraphs={GLOSSARIO.deslocamento}><HelpCalc>{race ? `${sub?.speed ? sub.name : race.name}: ${formatMeters(derived.speed)}` : "Sem raça escolhida: 9 m"} = {Math.floor(derived.speed / 1.5)} quadrados no mapa.</HelpCalc></Help>}>
-            <span className="font-display text-4xl font-bold">{formatMeters(derived.speed - derived.armorSpeedPenalty)}</span>
+          <StatBox label="Deslocamento" help={<Help title="Deslocamento" paragraphs={GLOSSARIO.deslocamento}><HelpCalc>{race ? `${sub?.speed ? sub.name : race.name}: ${formatMeters(derived.speed)}` : "Sem raça escolhida: 9 m"}{derived.speedParts.map((p) => ` + ${formatMeters(p.value)} (${p.label})`).join("")}{derived.armorSpeedPenalty ? " − 3 m (armadura pesada sem Força suficiente)" : ""} = {formatMeters(totalSpeed)}, ou {Math.floor(totalSpeed / 1.5)} quadrados no mapa.</HelpCalc></Help>}>
+            <span className="font-display text-4xl font-bold">{formatMeters(totalSpeed)}</span>
             <span className="text-xs text-dim">
-              {Math.floor((derived.speed - derived.armorSpeedPenalty) / 1.5)} quadrados
+              {Math.floor(totalSpeed / 1.5)} quadrados
               {derived.armorSpeedPenalty ? " · −3 m pela armadura pesada" : ""}
             </span>
           </StatBox>
@@ -689,7 +741,7 @@ function CharacterEditor() {
             <span className="font-display text-4xl font-bold">{formatMod(prof)}</span>
           </StatBox>
 
-          <StatBox label="Percepção passiva" help={<Help title="Percepção passiva" paragraphs={GLOSSARIO.percepcao_passiva}><HelpCalc>10 {formatMod(skillBonus("percepcao"))} (seu bônus de Percepção) = {derived.passive}</HelpCalc></Help>}>
+          <StatBox label="Percepção passiva" help={<Help title="Percepção passiva" paragraphs={GLOSSARIO.percepcao_passiva}><HelpCalc>10 {formatMod(skillBonus("percepcao"))} (seu bônus de Percepção){char.feats.includes("Observador") ? " +5 do talento Observador" : ""} = {derived.passive}</HelpCalc></Help>}>
             <span className="font-display text-4xl font-bold">{derived.passive}</span>
           </StatBox>
 
@@ -925,6 +977,9 @@ function CharacterEditor() {
           placeholder="De onde seu herói vem? O que ele procura? Anote também idiomas, aliados e segredos."
         />
       </section>
+
+      </>
+      )}
 
       <button className="btn btn-danger mt-6" onClick={remove}>
         Excluir ficha

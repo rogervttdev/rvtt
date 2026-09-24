@@ -79,9 +79,16 @@ Permissões: cada jogador move/remove os próprios tokens; o mestre (dono da mes
 - Os **ataques** são montados automaticamente: bônus de ataque (Força, ou Destreza para armas à distância/acuidade, + proficiência se a classe/raça é treinada) e dano (dado da arma + modificador; versáteis mostram também o dano com duas mãos). Cajados servem de arma (como bordão).
 - Cada item, propriedade (Acuidade, Leve, Versátil…) e tipo de dano tem um balão explicativo.
 
+## Aba "Progressão e talentos"
+
+- **Habilidades por nível** das 12 classes (1º ao 20º), liberadas conforme o nível da ficha; as próximas aparecem bloqueadas.
+- **Subclasse**: todas as do Livro do Jogador (36), com as habilidades de cada nível; o botão só é liberado no nível certo da classe. Salva na coluna `characters.subclass`.
+- **Talentos**: catálogo com os 42 talentos oficiais (nome em português e inglês, pré-requisito e bônus de atributo). Os escolhidos ficam em `characters.feats` (jsonb). Alerta, Observador, Mobilidade e Robusto já entram nos cálculos da ficha.
+- Dados em `src/lib/progressao.ts`.
+
 ## Retrato do personagem
 
-Na ficha, a moldura ao lado do nome aceita PNG, JPG ou WEBP (clique, toque ou arraste a imagem). A foto é reduzida no navegador (máx. 640 px), enviada ao **Supabase Storage** no bucket público `avatars`, na pasta `avatars/<user_id>/`, e a URL fica salva na coluna `characters.avatar_url`. O retrato é salvo na hora, sem precisar do botão "Salvar ficha". Ao trocar ou excluir, o arquivo antigo é apagado.
+Na ficha, a moldura ao lado do nome aceita PNG, JPG ou WEBP (clique, toque ou arraste a imagem). A foto é reduzida no navegador (máx. 640 px), enviada ao **Supabase Storage** no bucket público `characters`, na pasta `characters/<user_id>/`, e a URL fica salva na coluna `characters.avatar_url`. O retrato é salvo na hora, sem precisar do botão "Salvar ficha". Ao trocar ou excluir, o arquivo antigo é apagado.
 
 O `schema.sql` cria o bucket e as políticas: qualquer um vê as imagens pela URL, mas cada jogador só envia, troca ou apaga arquivos da própria pasta.
 
