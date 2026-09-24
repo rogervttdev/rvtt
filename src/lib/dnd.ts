@@ -48,6 +48,14 @@ export function normalizeCharacter(row: any): Character {
     avatar_url: row.avatar_url ?? null,
     alignment: row.alignment ?? "",
     subclass: row.subclass ?? "",
+    xp: Math.max(0, Number(row.xp ?? 0)),
+    coins: {
+      pc: Number(row.coins?.pc ?? 0),
+      pp: Number(row.coins?.pp ?? 0),
+      ep: Number(row.coins?.ep ?? 0),
+      po: Number(row.coins?.po ?? 0),
+      pl: Number(row.coins?.pl ?? 0),
+    },
     feats: Array.isArray(row.feats) ? row.feats.filter((f: unknown) => typeof f === "string") : [],
     equipment: {
       armor: row.equipment?.armor ?? null,

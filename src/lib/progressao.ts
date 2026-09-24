@@ -761,3 +761,19 @@ export const findFeat = (name: string) => FEATS.find((f) => f.name === name);
 export function asiLevels(className?: string | null) {
   return (CLASS_FEATURES[className ?? ""] ?? []).filter((f) => f.asi).map((f) => f.level);
 }
+
+// ---------------------------------------------------------------------------
+// Experiência (tabela oficial do Livro do Jogador)
+// ---------------------------------------------------------------------------
+
+/** XP mínima para cada nível (índice 0 = 1º nível). */
+export const XP_TABLE = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
+
+/** Maior nível que a XP permite. */
+export const levelForXp = (xp: number) => {
+  let lvl = 1;
+  XP_TABLE.forEach((min, i) => {
+    if (xp >= min) lvl = i + 1;
+  });
+  return lvl;
+};

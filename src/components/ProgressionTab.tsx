@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Help } from "./Help";
 import { Picker } from "./Picker";
-import { CLASS_FEATURES, FEATS, SUBCLASSES, asiLevels, findFeat, type Feature } from "@/lib/progressao";
+import { CLASS_FEATURES, FEATS, SUBCLASSES, XP_TABLE, asiLevels, findFeat, levelForXp, type Feature } from "@/lib/progressao";
 import type { ClassDef } from "@/lib/regras";
 
 type Props = {
@@ -11,13 +11,16 @@ type Props = {
   level: number;
   subclass: string;
   feats: string[];
+  xp: number;
+  onXp: (xp: number) => void;
+  onLevel: (level: number) => void;
   onSubclass: (name: string) => void;
   onFeats: (feats: string[]) => void;
 };
 
 type Row = Feature & { source: "classe" | "subclasse" | "pendente" };
 
-export function ProgressionTab({ cls, level, subclass, feats, onSubclass, onFeats }: Props) {
+export function ProgressionTab({ cls, level, subclass, feats, xp, onXp, onLevel, onSubclass, onFeats }: Props) {
   const [showLocked, setShowLocked] = useState(false);
   const [catalog, setCatalog] = useState(false);
   const [query, setQuery] = useState("");
@@ -49,12 +52,17 @@ export function ProgressionTab({ cls, level, subclass, feats, onSubclass, onFeat
   const asiReached = asiLevels(cls?.name).filter((l) => l <= level);
   const nextLevel = byLevel.find(([l]) => l > level);
 
+  const xpPanel = <XpPanel xp={xp} level={level} onXp={onXp} onLevel={onLevel} />;
+
   if (!cls)
     return (
+      <>
+      {xpPanel}
       <div className="parchment-grid mt-6 rounded-lg border border-dashed border-brass-deep p-10 text-center">
         <p className="font-display text-2xl font-bold text-ember-deep">Escolha uma classe primeiro</p>
         <p className="mt-1 text-dim">Na aba Ficha, em Origem. Depois as habilidades de cada nível aparecem aqui.</p>
       </div>
+      </>
     );
 
   const q = query.trim().toLowerCase();
@@ -62,6 +70,8 @@ export function ProgressionTab({ cls, level, subclass, feats, onSubclass, onFeat
 
   return (
     <div className="mt-6 space-y-10">
+      {xpPanel}
+
       {/* ---------- Subclasse ---------- */}
       {group && (
         <section>
@@ -279,5 +289,83 @@ function FeatHelp({ name }: { name: string }) {
       {f.prereq && <p>Pré-requisito: {f.prereq}.</p>}
       <p className="text-sm opacity-80">Nome em inglês: {f.en}</p>
     </Help>
+  );
+}
+
+function XpPanel({ xp, level, onXp, onLevel }: { xp: number; level: number; onXp: (xp: number) => void; onLevel: (l: number) => void }) {
+  const [gain, setGain] = useState("");
+  const floor = XP_TABLE[level - 1] ?? 0;
+  const next = XP_TABLE[level];
+  const reachable = levelForXp(xp);
+  const canLevel = level < 20 && reachable > level;
+  const pct = next ? Math.max(0, Math.min(100, ((xp - floor) / (next - floor)) * 100)) : 100;
+
+  return (
+    <section className={`panel p-4 ${canLevel ? "ring-2 ring-brass-deep" : ""}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="font-display text-2xl font-bold">Experiência</h2>
+        <Help
+          title="Pontos de experiência (XP)"
+          paragraphs={[
+            "Ao vencer monstros, resolver enigmas e completar missões, o mestre dá pontos de experiência (XP). Ao juntar o suficiente, o herói sobe de nível.",
+            "Alguns mestres não usam XP e sobem todos de nível em momentos marcantes da história (por marco). Nesse caso, é só mudar o nível direto na aba Ficha.",
+          ]}
+        >
+          <ul className="grid grid-cols-2 gap-x-4 text-sm">
+            {XP_TABLE.map((min, i) => (
+              <li key={i} className={i + 1 === level ? "font-bold text-brass-light" : ""}>
+                {i + 1}º nível: {min.toLocaleString("pt-BR")} XP
+              </li>
+            ))}
+          </ul>
+        </Help>
+        <span className="ml-auto font-display text-xl font-bold">
+          {xp.toLocaleString("pt-BR")} XP{" "}
+          <span className="font-sans text-sm font-semibold text-dim">{next ? `/ ${next.toLocaleString("pt-BR")} para o ${level + 1}º nível` : "· nível máximo"}</span>
+        </span>
+      </div>
+
+      <div className="xp-bar mt-3" role="progressbar" aria-valuemin={floor} aria-valuemax={next ?? floor} aria-valuenow={xp} aria-label="Progresso de experiência">
+        <div className={`xp-fill ${canLevel ? "is-full" : ""}`} style={{ width: `${pct}%` }} />
+        <span className="xp-label">
+          {level}º nível{next ? ` → ${level + 1}º` : ""}
+        </span>
+      </div>
+
+      {canLevel && (
+        <div className="level-up mt-3" role="status">
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-xl font-bold">Hora de subir de nível!</p>
+            <p className="text-sm">
+              Sua experiência já vale o {reachable}º nível. Suba e veja as novas habilidades que se liberam logo abaixo.
+            </p>
+          </div>
+          <button className="btn btn-brass" onClick={() => onLevel(level + 1)}>
+            Subir para o {level + 1}º nível
+          </button>
+        </div>
+      )}
+
+      <form
+        className="mt-3 flex flex-wrap items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const n = Math.floor(Number(gain) || 0);
+          if (!n) return;
+          onXp(Math.max(0, xp + n));
+          setGain("");
+        }}
+      >
+        <label htmlFor="xp-ganho" className="text-sm font-semibold">
+          XP ganha na sessão
+        </label>
+        <input id="xp-ganho" className="field w-28" type="number" value={gain} onChange={(e) => setGain(e.target.value)} placeholder="ex.: 150" />
+        <button className="btn btn-primary">Somar XP</button>
+        <label className="ml-auto flex items-center gap-2 text-sm text-dim">
+          Total
+          <input className="field w-28 px-2 py-1" type="number" min={0} value={xp} onChange={(e) => onXp(Math.max(0, Math.floor(Number(e.target.value) || 0)))} aria-label="XP total" />
+        </label>
+      </form>
+    </section>
   );
 }

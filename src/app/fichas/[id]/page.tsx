@@ -11,9 +11,11 @@ import { supabase } from "@/lib/supabase";
 import { deleteAvatar } from "@/lib/avatar";
 import { ABILITIES, ABILITY_LABEL, formatMod, modifier, normalizeCharacter, proficiency, rollFormula, uid } from "@/lib/dnd";
 import { ABILITY_ABOUT, ALIGNMENTS, GLOSSARIO } from "@/lib/glossario";
-import { computeAc, findArmor } from "@/lib/equipamento";
+import { computeAc, equipmentWeights, findArmor } from "@/lib/equipamento";
 import { EquipmentSection } from "@/components/EquipmentSection";
 import { ProgressionTab } from "@/components/ProgressionTab";
+import { BackpackSection, totalLoad } from "@/components/BackpackSection";
+import { carryCapacity } from "@/lib/itens";
 import {
   BACKGROUNDS,
   CLASSES,
@@ -186,6 +188,8 @@ function CharacterEditor() {
       equipment: char.equipment,
       subclass: char.subclass || null,
       feats: char.feats,
+      xp: char.xp,
+      coins: char.coins,
       inventory: char.inventory,
       spells: char.spells,
       notes: char.notes,
@@ -236,7 +240,10 @@ function CharacterEditor() {
     );
 
   const d = char.details;
-  const totalSpeed = derived.speed + derived.speedParts.reduce((t, p) => t + p.value, 0) - derived.armorSpeedPenalty;
+  const load = totalLoad(char.inventory, char.coins, equipmentWeights(char.equipment));
+  const overloaded = load > carryCapacity(derived.scores.str);
+  const normalSpeed = derived.speed + derived.speedParts.reduce((t, p) => t + p.value, 0) - derived.armorSpeedPenalty;
+  const totalSpeed = overloaded ? Math.min(1.5, normalSpeed) : normalSpeed;
   const alignment = ALIGNMENTS.find((a) => a.name === char.alignment);
   const { race, sub, cls, bg, bonus, scores, mods, prof, granted, chosen, isProf, skillBonus, allowedChoices, overlap } = derived;
   const hpPct = char.hp_max > 0 ? Math.max(0, Math.min(100, (char.hp_current / char.hp_max) * 100)) : 0;
@@ -275,6 +282,9 @@ function CharacterEditor() {
               onChange={(e) => patch({ name: e.target.value })}
             />
             <p className="mt-2 text-sm text-dim">
+              <button className="xp-chip" onClick={() => changeTab("progressao")} title="Ver experiência">
+                {char.xp.toLocaleString("pt-BR")} XP
+              </button>{" "}
               {[sub?.name ?? race?.name, cls ? (char.subclass ? `${cls.name} (${char.subclass})` : cls.name) : null, bg?.name, char.alignment].filter(Boolean).join(" · ") || "Escolha raça, classe e antecedente logo abaixo."}
             </p>
           </div>
@@ -317,6 +327,9 @@ function CharacterEditor() {
           level={char.level}
           subclass={char.subclass ?? ""}
           feats={char.feats}
+          xp={char.xp}
+          onXp={(xp) => patch({ xp })}
+          onLevel={(level) => patch({ level })}
           onSubclass={(subclass) => patch({ subclass })}
           onFeats={(feats) => patch({ feats })}
         />
@@ -735,6 +748,11 @@ function CharacterEditor() {
               {Math.floor(totalSpeed / 1.5)} quadrados
               {derived.armorSpeedPenalty ? " · −3 m pela armadura pesada" : ""}
             </span>
+            {overloaded && (
+              <a href="#mochila" className="text-xs font-bold text-blood underline">
+                Excesso de carga: máx. 1,5 m
+              </a>
+            )}
           </StatBox>
 
           <StatBox label="Proficiência" help={<Help title="Bônus de proficiência" paragraphs={GLOSSARIO.proficiencia}><HelpCalc>No {char.level}º nível o seu bônus é {formatMod(prof)}.</HelpCalc></Help>}>
@@ -880,46 +898,17 @@ function CharacterEditor() {
         <p className="mt-2 text-sm text-dim">★ sugerida para a sua classe · as etiquetas mostram perícias que vêm prontas.</p>
       </section>
 
-      {/* ---------- Inventário e magias ---------- */}
-      <div className="mt-10 grid gap-6 md:grid-cols-2">
-        <section>
-          <h2 className="font-display text-2xl font-bold">Mochila</h2>
-          <p className="text-sm text-dim">Outros itens: cordas, tochas, rações, poções. Armas e armaduras ficam em Equipamento.</p>
-          <form
-            className="mt-3 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!newItem.trim()) return;
-              patch({ inventory: [...char.inventory, { id: uid(), name: newItem.trim(), qty: 1 }] });
-              setNewItem("");
-            }}
-          >
-            <input className="field" value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Corda de cânhamo (15 m)" aria-label="Novo item" />
-            <button className="btn btn-primary">Adicionar</button>
-          </form>
-          <ul className="mt-3 divide-y divide-rule rounded-lg border border-rule bg-vellum">
-            {char.inventory.length === 0 && <li className="px-3 py-3 text-sm text-dim">Mochila vazia. Pergunte ao mestre qual é o seu equipamento inicial.</li>}
-            {char.inventory.map((item) => (
-              <li key={item.id} className="flex items-center gap-2 px-3 py-2">
-                <input
-                  className="field w-16 py-1 text-center"
-                  type="number"
-                  min={0}
-                  value={item.qty}
-                  aria-label={`Quantidade de ${item.name}`}
-                  onChange={(e) =>
-                    patch({ inventory: char.inventory.map((i) => (i.id === item.id ? { ...i, qty: Math.max(0, Number(e.target.value) || 0) } : i)) })
-                  }
-                />
-                <span className="flex-1">{item.name}</span>
-                <button className="btn btn-danger px-2 py-1" onClick={() => patch({ inventory: char.inventory.filter((i) => i.id !== item.id) })}>
-                  Remover
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+      <BackpackSection
+        inventory={char.inventory}
+        coins={char.coins}
+        strScore={scores.str}
+        equipmentWeights={equipmentWeights(char.equipment)}
+        onInventory={(inventory) => patch({ inventory })}
+        onCoins={(coins) => patch({ coins })}
+      />
 
+      {/* ---------- Magias ---------- */}
+      <div className="mt-10 grid gap-6 md:grid-cols-2">
         <section>
           <h2 className="font-display text-2xl font-bold">Magias</h2>
           <form

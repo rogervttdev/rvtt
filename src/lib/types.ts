@@ -1,7 +1,15 @@
 export type AbilityKey = "str" | "dex" | "con" | "int" | "wis" | "cha";
 export type Abilities = Record<AbilityKey, number>;
 
-export type InventoryItem = { id: string; name: string; qty: number };
+export type InventoryItem = {
+  id: string;
+  name: string;
+  qty: number;
+  /** Peso de UMA unidade, em libras */
+  weight?: number;
+  /** id do item no catálogo (src/lib/itens.ts), quando veio de lá */
+  catalogId?: string;
+};
 export type Spell = { id: string; name: string; level: number; prepared: boolean };
 
 export type SkillKey =
@@ -54,6 +62,8 @@ export type Character = {
   alignment: string | null;
   equipment: Equipment;
   subclass: string | null;
+  xp: number;
+  coins: { pc: number; pp: number; ep: number; po: number; pl: number };
   /** Nomes dos talentos escolhidos */
   feats: string[];
   race: string | null;

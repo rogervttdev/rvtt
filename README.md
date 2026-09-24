@@ -86,6 +86,13 @@ Permissões: cada jogador move/remove os próprios tokens; o mestre (dono da mes
 - **Talentos**: catálogo com os 42 talentos oficiais (nome em português e inglês, pré-requisito e bônus de atributo). Os escolhidos ficam em `characters.feats` (jsonb). Alerta, Observador, Mobilidade e Robusto já entram nos cálculos da ficha.
 - Dados em `src/lib/progressao.ts`.
 
+## Experiência, mochila, moedas e carga
+
+- **XP** (coluna `characters.xp`): barra de progresso na aba Progressão com a tabela oficial (300, 900, 2.700… 355.000). Campo para somar a XP da sessão; ao atingir o próximo nível aparece o aviso "Hora de subir de nível!" com botão para subir.
+- **Mochila** (coluna `characters.inventory`): catálogo com o equipamento de aventura do Livro do Jogador em categorias (aventura, luz e fogo, recipientes, comida e acampamento, roupas, munição, poções e alquimia, ferramentas, kits), com preço, peso e explicação de cada item, além de pacotes prontos (Explorador, Masmorras, Assaltante). Itens fora do catálogo podem ser criados com peso próprio. Dados em `src/lib/itens.ts`.
+- **Moedas** (coluna `characters.coins`, jsonb): PC, PP, EP, PO e PL, total em PO e trocador com o câmbio oficial (1 PL = 10 PO; 1 PO = 2 EP = 10 PP = 100 PC).
+- **Carga**: soma armadura, escudo, armas, foco, itens da mochila e moedas (50 moedas = 1 lb), em libras. Capacidade = Força × 15. Acima disso aparece o aviso de excesso de carga e o deslocamento cai para 1,5 m.
+
 ## Retrato do personagem
 
 Na ficha, a moldura ao lado do nome aceita PNG, JPG ou WEBP (clique, toque ou arraste a imagem). A foto é reduzida no navegador (máx. 640 px), enviada ao **Supabase Storage** no bucket público `characters`, na pasta `characters/<user_id>/`, e a URL fica salva na coluna `characters.avatar_url`. O retrato é salvo na hora, sem precisar do botão "Salvar ficha". Ao trocar ou excluir, o arquivo antigo é apagado.

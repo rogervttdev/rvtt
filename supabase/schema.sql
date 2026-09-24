@@ -27,6 +27,9 @@ alter table public.characters add column if not exists alignment text;   -- tend
 alter table public.characters add column if not exists equipment jsonb not null default '{}'::jsonb;  -- armadura, escudo, armas, foco
 alter table public.characters add column if not exists subclass text;    -- subclasse (aba Progressão)
 alter table public.characters add column if not exists feats jsonb not null default '[]'::jsonb;  -- talentos escolhidos
+alter table public.characters add column if not exists xp int not null default 0;  -- pontos de experiência
+alter table public.characters add column if not exists coins jsonb not null
+  default '{"pc":0,"pp":0,"ep":0,"po":0,"pl":0}'::jsonb;  -- moedas (PC, PP, EP, PO, PL)
 alter table public.characters add column if not exists race text;
 alter table public.characters add column if not exists class text;
 alter table public.characters add column if not exists level int not null default 1;
