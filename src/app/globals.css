@@ -202,6 +202,42 @@ body {
     transform: translateY(2px);
     box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
   }
+  /* Cartão de pergaminho em relevo com o selo do Google */
+  .btn-google {
+    position: relative;
+    padding: 0.45rem 0.9rem 0.45rem 0.45rem;
+    background-color: #fbf4e2;
+    background-image: linear-gradient(to bottom, rgb(255 255 255 / 0.55), rgb(211 189 144 / 0.25)), var(--grain);
+    border: 1px solid #b89a63;
+    color: var(--color-ink);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.8),
+      inset 0 0 0 3px rgb(246 236 212 / 0.5),
+      0 2px 0 #b89a63,
+      0 4px 8px -3px rgb(42 28 18 / 0.35);
+  }
+  .btn-google:hover:not(:disabled) {
+    background-color: #fff8e8;
+    border-color: var(--color-brass-deep);
+  }
+  .btn-google:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: inset 0 1px 3px rgb(90 58 36 / 0.25);
+  }
+  .google-seal {
+    display: inline-flex;
+    height: 2.1rem;
+    width: 2.1rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid var(--color-brass);
+    box-shadow:
+      0 0 0 1px var(--color-brass-deep),
+      inset 0 1px 2px rgb(90 58 36 / 0.2);
+  }
   .panel {
     border: 1px solid var(--color-rule);
     background-color: var(--color-vellum);

@@ -51,6 +51,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const displayName =
     username ||
     (user?.user_metadata?.username as string | undefined) ||
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
     user?.email?.split("@")[0] ||
     "";
 
