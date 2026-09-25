@@ -71,6 +71,9 @@ alter table public.rooms add column if not exists name text not null default 'No
 alter table public.rooms add column if not exists cols int not null default 24;
 alter table public.rooms add column if not exists rows int not null default 16;
 alter table public.rooms add column if not exists background_url text;
+alter table public.rooms add column if not exists turn_order jsonb not null default '[]'::jsonb;  -- rastreador de iniciativa
+alter table public.rooms add column if not exists current_turn int not null default 0;             -- índice de quem está na vez
+alter table public.rooms add column if not exists round int not null default 1;                     -- rodada atual de combate
 alter table public.rooms add column if not exists created_at timestamptz not null default now();
 
 -- ---------- tokens ----------

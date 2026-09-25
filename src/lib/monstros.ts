@@ -169,5 +169,9 @@ export function normalizeTokenStats(raw: unknown): TokenStats {
     abilities: r.abilities,
     attacks: r.attacks,
     monsterId: r.monsterId,
+    sceneryId: r.sceneryId,
+    kind: r.kind,
+    icon: r.icon,
+    blocks: r.blocks,
   };
 }

@@ -12,6 +12,10 @@ import { TOKEN_COLORS, initials, uid } from "@/lib/dnd";
 import { DEFAULT_TOKEN_STATS, MONSTERS, SIZE_CELLS, normalizeTokenStats, statsFromMonster, type MonsterDef } from "@/lib/monstros";
 import { MonsterPanel } from "@/components/MonsterPanel";
 import { TokenTooltip } from "@/components/TokenTooltip";
+import { InitiativeTracker } from "@/components/InitiativeTracker";
+import { DiceOverlay } from "@/components/DiceOverlay";
+import { CharacterSheetModal } from "@/components/CharacterSheetModal";
+import { SCENERY, statsFromScenery, type SceneryDef } from "@/lib/cenario";
 import type { PresenceUser, Room, RollEntry, RollResult, Token, TokenStats } from "@/lib/types";
 
 export default function MesaPage() {
@@ -43,6 +47,9 @@ function GameTable() {
   const [bestiaryOpen, setBestiaryOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
+  const [diceQueue, setDiceQueue] = useState<RollEntry[]>([]);
+  const [sheetId, setSheetId] = useState<string | null>(null);
+  const [charPicker, setCharPicker] = useState(false);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -62,7 +69,8 @@ function GameTable() {
       ]);
       if (cancelled) return;
       if (!roomRes.data) return setStatus("missing");
-      setRoom(roomRes.data as Room);
+      const r = roomRes.data as Room;
+      setRoom({ ...r, turn_order: Array.isArray(r.turn_order) ? r.turn_order : [], current_turn: r.current_turn ?? 0, round: r.round ?? 1 });
       setTokens(((tokenRes.data as Token[]) ?? []).map((t) => ({ ...t, stats: normalizeTokenStats(t.stats) })));
       setMyChars((charRes.data as typeof myChars) ?? []);
       setStatus("ready");
@@ -96,7 +104,13 @@ function GameTable() {
         setTokens((ts) => ts.filter((t) => t.id !== id));
       })
       .on("broadcast", { event: "roll" }, ({ payload }) => {
-        setRolls((rs) => [payload as RollEntry, ...rs].slice(0, 60));
+        const entry = payload as RollEntry;
+        setRolls((rs) => [entry, ...rs].slice(0, 60));
+        setDiceQueue((q) => [...q, entry]);
+      })
+      .on("broadcast", { event: "token-add-batch" }, ({ payload }) => {
+        const batch = (payload as Token[]).map((t) => ({ ...t, stats: normalizeTokenStats(t.stats) }));
+        setTokens((ts) => [...ts, ...batch.filter((t) => !ts.some((x) => x.id === t.id))]);
       })
       .on("broadcast", { event: "room-update" }, ({ payload }) => {
         setRoom(payload as Room);
@@ -193,16 +207,19 @@ function GameTable() {
     persistPosition(t.id, x, y);
   }
 
-  /** Acha uma casa livre no grid, respeitando o tamanho (footprint) da criatura. */
-  function freeSpot(span: number) {
-    if (!room) return { x: 0, y: 0 };
+  /** Marca no set todas as células cobertas por um token de `span` casas de lado. */
+  function markOccupied(occupied: Set<string>, x: number, y: number, span: number) {
+    for (let dx = 0; dx < span; dx++) for (let dy = 0; dy < span; dy++) occupied.add(`${x + dx},${y + dy}`);
+  }
+
+  /** Acha `count` casas livres adjacentes no grid, respeitando o tamanho (footprint) da criatura. */
+  function freeSpots(span: number, count: number): { x: number; y: number }[] {
+    if (!room) return [];
     const occupied = new Set<string>();
-    for (const t of tokens) {
-      const s = SIZE_CELLS[t.stats.size];
-      for (let dx = 0; dx < s; dx++) for (let dy = 0; dy < s; dy++) occupied.add(`${t.x + dx},${t.y + dy}`);
-    }
-    for (let y = 0; y <= room.rows - span; y++)
-      for (let x = 0; x <= room.cols - span; x++) {
+    for (const t of tokens) markOccupied(occupied, t.x, t.y, SIZE_CELLS[t.stats.size]);
+    const spots: { x: number; y: number }[] = [];
+    for (let y = 0; y <= room.rows - span && spots.length < count; y++)
+      for (let x = 0; x <= room.cols - span && spots.length < count; x++) {
         let free = true;
         outer: for (let dx = 0; dx < span; dx++)
           for (let dy = 0; dy < span; dy++)
@@ -210,9 +227,16 @@ function GameTable() {
               free = false;
               break outer;
             }
-        if (free) return { x, y };
+        if (free) {
+          spots.push({ x, y });
+          markOccupied(occupied, x, y, span);
+        }
       }
-    return { x: 0, y: 0 };
+    return spots;
+  }
+
+  function freeSpot(span: number) {
+    return freeSpots(span, 1)[0] ?? { x: 0, y: 0 };
   }
 
   async function addToken(input: { label: string; color: string; character_id: string | null; stats?: TokenStats; at?: { x: number; y: number } }) {
@@ -232,9 +256,48 @@ function GameTable() {
     send("token-add", token);
   }
 
-  /** Instancia um monstro do bestiário direto no mapa, com CA/PV/ataques prontos. */
-  function addMonster(m: MonsterDef) {
-    addToken({ label: m.name, color: m.color, character_id: null, stats: statsFromMonster(m) });
+  /** Instancia N monstros do bestiário direto no mapa, com CA/PV/ataques prontos. */
+  async function addMonster(m: MonsterDef, qty = 1) {
+    if (!room) return;
+    const span = SIZE_CELLS[m.size];
+    const spots = freeSpots(span, qty);
+    const rows = spots.map((spot) => ({
+      room_id: room.id,
+      owner_id: user.id,
+      label: qty > 1 ? `${m.name} ${spots.indexOf(spot) + 1}` : m.name,
+      color: m.color,
+      character_id: null,
+      stats: statsFromMonster(m),
+      ...spot,
+    }));
+    if (rows.length === 0) return;
+    const { data, error } = await supabase.from("tokens").insert(rows).select("*");
+    if (error) return setError(`Não foi possível colocar: ${error.message}`);
+    const batch = (data as Token[]).map((t) => ({ ...t, stats: normalizeTokenStats(t.stats) }));
+    setTokens((ts) => [...ts, ...batch]);
+    send("token-add-batch", batch);
+  }
+
+  /** Instancia N itens de cenário (paredes, mobília, natureza…) já espalhados em casas livres. */
+  async function addScenery(item: SceneryDef, qty = 1, at?: { x: number; y: number }) {
+    if (!room) return;
+    const span = SIZE_CELLS[item.size];
+    const spots = at ? [at] : freeSpots(span, qty);
+    const rows = spots.map((spot, i) => ({
+      room_id: room.id,
+      owner_id: user.id,
+      label: qty > 1 ? `${item.name} ${i + 1}` : item.name,
+      color: item.color,
+      character_id: null,
+      stats: statsFromScenery(item),
+      ...spot,
+    }));
+    if (rows.length === 0) return;
+    const { data, error } = await supabase.from("tokens").insert(rows).select("*");
+    if (error) return setError(`Não foi possível colocar: ${error.message}`);
+    const batch = (data as Token[]).map((t) => ({ ...t, stats: normalizeTokenStats(t.stats) }));
+    setTokens((ts) => [...ts, ...batch]);
+    send("token-add-batch", batch);
   }
 
   /** Ajusta PV (ou outro campo de combate) do token: salva no banco e avisa todo mundo na hora. */
@@ -258,6 +321,7 @@ function GameTable() {
   function handleRoll(r: RollResult) {
     const entry: RollEntry = { ...r, id: uid(), author: displayName, authorId: user.id, at: Date.now() };
     setRolls((rs) => [entry, ...rs].slice(0, 60));
+    setDiceQueue((q) => [...q, entry]);
     send("roll", entry);
   }
 
@@ -274,6 +338,19 @@ function GameTable() {
     send("room-update", next);
   }
 
+  /** Atualiza a ordem de iniciativa, quem está na vez e a rodada — salva e avisa todo mundo. */
+  async function updateTurns(patch: Partial<Pick<Room, "turn_order" | "current_turn" | "round">>) {
+    if (!room) return;
+    const next = { ...room, ...patch };
+    setRoom(next);
+    send("room-update", next);
+    const { error } = await supabase
+      .from("rooms")
+      .update({ turn_order: next.turn_order, current_turn: next.current_turn, round: next.round })
+      .eq("id", room.id);
+    if (error) setError(`Não foi possível salvar a iniciativa: ${error.message}`);
+  }
+
   async function copyLink() {
     await navigator.clipboard.writeText(window.location.href);
     setCopied(true);
@@ -281,6 +358,19 @@ function GameTable() {
   }
 
   const selectedToken = useMemo(() => tokens.find((t) => t.id === selected) ?? null, [tokens, selected]);
+
+  /** Personagem que esse jogador trouxe para a mesa (pelo token vinculado a ele). */
+  const charIdForUser = useCallback(
+    (uid: string) => tokens.find((t) => t.owner_id === uid && t.character_id)?.character_id ?? null,
+    [tokens],
+  );
+
+  function openMyCharacter() {
+    const fromToken = charIdForUser(user.id);
+    if (fromToken) return setSheetId(fromToken);
+    if (myChars.length === 1) return setSheetId(myChars[0].id);
+    if (myChars.length > 1) return setCharPicker(true);
+  }
 
   if (status === "loading") return <p className="p-8 text-dim">Abrindo a mesa…</p>;
   if (status === "missing" || !room)
@@ -321,6 +411,8 @@ function GameTable() {
           </button>
         </div>
 
+        <InitiativeTracker room={room} tokens={tokens} isGM={isGM} onChange={updateTurns} />
+
         {error && (
           <p className="flex items-center justify-between bg-blood/10 px-4 py-2 text-sm text-blood" role="alert">
             {error}
@@ -346,10 +438,18 @@ function GameTable() {
             onDrop={(e) => {
               e.preventDefault();
               const monsterId = e.dataTransfer.getData("application/x-monster-id");
-              const m = MONSTERS.find((x) => x.id === monsterId);
-              if (!m) return;
-              const at = cellFromPointer(e.clientX, e.clientY, SIZE_CELLS[m.size]);
-              addToken({ label: m.name, color: m.color, character_id: null, stats: statsFromMonster(m), at });
+              const sceneryId = e.dataTransfer.getData("application/x-scenery-id");
+              if (monsterId) {
+                const m = MONSTERS.find((x) => x.id === monsterId);
+                if (!m) return;
+                const at = cellFromPointer(e.clientX, e.clientY, SIZE_CELLS[m.size]);
+                addToken({ label: m.name, color: m.color, character_id: null, stats: statsFromMonster(m), at });
+              } else if (sceneryId) {
+                const item = SCENERY.find((x) => x.id === sceneryId);
+                if (!item) return;
+                const at = cellFromPointer(e.clientX, e.clientY, SIZE_CELLS[item.size]);
+                addScenery(item, 1, at);
+              }
             }}
           >
             {tokens.map((t) => {
@@ -357,12 +457,14 @@ function GameTable() {
               const mine = canControl(t);
               const span = SIZE_CELLS[t.stats.size];
               const hpPct = t.stats.hp_max > 0 ? Math.max(0, Math.min(100, (t.stats.hp_current / t.stats.hp_max) * 100)) : 0;
+              const isScenery = t.stats.kind === "cenario";
+              const isActiveTurn = room.turn_order[room.current_turn]?.token_id === t.id;
               return (
                 <button
                   key={t.id}
                   type="button"
                   title={t.label}
-                  aria-label={`${t.label}, coluna ${t.x + 1}, linha ${t.y + 1}, ${t.stats.hp_current} de ${t.stats.hp_max} PV${mine ? ". Use as setas para mover." : ""}`}
+                  aria-label={`${t.label}, coluna ${t.x + 1}, linha ${t.y + 1}${isScenery ? "" : `, ${t.stats.hp_current} de ${t.stats.hp_max} PV`}${mine ? ". Use as setas para mover." : ""}${isActiveTurn ? ". É a vez dele agora." : ""}`}
                   onPointerDown={(e) => onTokenPointerDown(e, t)}
                   onPointerMove={onTokenPointerMove}
                   onPointerUp={onTokenPointerUp}
@@ -378,25 +480,25 @@ function GameTable() {
                     setHoveredId(t.id);
                   }}
                   onBlur={() => setHoveredId((id) => (id === t.id ? null : id))}
-                  className={`absolute flex flex-col items-center justify-center rounded-full font-display font-bold text-[#fbeed3] ${
-                    mine ? "cursor-grab active:cursor-grabbing" : "cursor-default"
-                  }`}
+                  className={`absolute flex flex-col items-center justify-center font-display font-bold text-[#fbeed3] ${
+                    isScenery ? "rounded-md" : "rounded-full"
+                  } ${isActiveTurn ? "token-active-turn" : ""} ${mine ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
                   style={{
                     left: t.x * cell + cell * 0.08,
                     top: t.y * cell + cell * 0.08,
                     width: span * cell - cell * 0.16,
                     height: span * cell - cell * 0.16,
-                    fontSize: cell * 0.32,
+                    fontSize: isScenery ? cell * 0.5 : cell * 0.32,
                     background: t.color,
                     border: `${Math.max(2, cell * 0.05)}px solid ${isSel ? "#2a1c12" : "#f6ecd4"}`,
                     boxShadow: isSel ? "0 0 0 3px rgb(195 154 78 / .8), 0 4px 10px rgb(42 28 18 / .45)" : "0 2px 4px rgb(42 28 18 / .45)",
                     transition: draggingId === t.id ? "none" : "left 110ms ease-out, top 110ms ease-out",
                     touchAction: "none",
-                    zIndex: isSel ? 10 : 1,
+                    zIndex: isSel ? 10 : isActiveTurn ? 5 : 1,
                   }}
                 >
-                  {initials(t.label)}
-                  {hpPct < 100 && (
+                  {isScenery ? t.stats.icon ?? "❓" : initials(t.label)}
+                  {!isScenery && hpPct < 100 && (
                     <span className="mt-0.5 block h-1 w-2/3 overflow-hidden rounded-full bg-black/40" aria-hidden>
                       <span className={`block h-full ${hpPct <= 25 ? "bg-blood" : "bg-moss"}`} style={{ width: `${hpPct}%` }} />
                     </span>
@@ -413,21 +515,33 @@ function GameTable() {
         return t ? <TokenTooltip token={t} x={hoverPos.x} y={hoverPos.y} /> : null;
       })()}
 
-      <MonsterPanel open={bestiaryOpen} onClose={() => setBestiaryOpen(false)} onAdd={addMonster} />
+      <MonsterPanel open={bestiaryOpen} onClose={() => setBestiaryOpen(false)} onAddMonster={addMonster} onAddScenery={addScenery} />
 
       {/* ---------- Painel lateral ---------- */}
       <aside className="w-full shrink-0 space-y-6 overflow-y-auto border-l border-rule bg-paper p-4 lg:w-[340px]">
         <section>
           <h2 className="mb-2 font-display text-lg font-bold">Na mesa ({online.length})</h2>
           <ul className="flex flex-wrap gap-1.5">
-            {online.map((p) => (
-              <li key={p.user_id} className="rounded-full bg-vellum px-3 py-1 text-sm shadow-[0_0_0_1px_var(--color-rule)]">
-                <span className="mr-1 text-moss">●</span>
-                {p.name}
-                {p.user_id === room.owner_id && <span className="text-dim"> (mestre)</span>}
-              </li>
-            ))}
+            {online.map((p) => {
+              const charId = charIdForUser(p.user_id);
+              const clickable = isGM && p.user_id !== user.id && charId;
+              const Tag = clickable ? "button" : "span";
+              return (
+                <li key={p.user_id}>
+                  <Tag
+                    className={`rounded-full bg-vellum px-3 py-1 text-sm shadow-[0_0_0_1px_var(--color-rule)] ${clickable ? "cursor-pointer hover:shadow-[0_0_0_1px_var(--color-brass-deep)]" : ""}`}
+                    onClick={clickable ? () => setSheetId(charId) : undefined}
+                    title={clickable ? `Ver a ficha de ${p.name}` : undefined}
+                  >
+                    <span className="mr-1 text-moss">●</span>
+                    {p.name}
+                    {p.user_id === room.owner_id && <span className="text-dim"> (mestre)</span>}
+                  </Tag>
+                </li>
+              );
+            })}
           </ul>
+          {isGM && <p className="mt-1.5 text-xs text-dim">Clique no nome de um jogador para abrir a ficha dele.</p>}
         </section>
 
         {selectedToken && (
@@ -552,6 +666,36 @@ function GameTable() {
 
         {isGM && <RoomSettings room={room} onSave={saveRoom} />}
       </aside>
+
+      {/* ---------- Botão flutuante "Minha ficha" (jogador) ---------- */}
+      {!isGM && (
+        <div className="my-sheet-fab">
+          {charPicker && (
+            <div className="my-sheet-picker">
+              <p className="mb-1 text-xs font-bold text-dim">Qual personagem?</p>
+              {myChars.map((c) => (
+                <button
+                  key={c.id}
+                  className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-rule"
+                  onClick={() => {
+                    setSheetId(c.id);
+                    setCharPicker(false);
+                  }}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          )}
+          <button className="btn btn-primary shadow-lg" onClick={openMyCharacter} disabled={myChars.length === 0}>
+            📜 Minha ficha
+          </button>
+        </div>
+      )}
+
+      <CharacterSheetModal characterId={sheetId} onClose={() => setSheetId(null)} />
+
+      <DiceOverlay roll={diceQueue[0] ?? null} onDone={() => setDiceQueue((q) => q.slice(1))} />
     </div>
   );
 }

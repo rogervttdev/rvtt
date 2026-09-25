@@ -104,6 +104,8 @@ export type Character = {
   updated_at: string;
 };
 
+export type TurnEntry = { token_id: string; initiative: number };
+
 export type Room = {
   id: string;
   owner_id: string;
@@ -111,6 +113,10 @@ export type Room = {
   cols: number;
   rows: number;
   background_url: string | null;
+  /** Rastreador de iniciativa: ordem dos combatentes, de quem está na vez e a rodada atual */
+  turn_order: TurnEntry[];
+  current_turn: number;
+  round: number;
   created_at: string;
 };
 
@@ -129,6 +135,13 @@ export type TokenStats = {
   attacks?: TokenAttack[];
   /** id do monstro no catálogo (src/lib/monstros.ts), quando veio de lá */
   monsterId?: string;
+  /** id do item de cenário (src/lib/cenario.ts), quando é um objeto sem ficha de combate */
+  sceneryId?: string;
+  /** "pc" | "monster" (padrão) ou "cenario" — decide como o token é desenhado no mapa */
+  kind?: "pc" | "monster" | "cenario";
+  /** Emoji do item de cenário, para desenhar o quadradinho sem precisar do catálogo */
+  icon?: string;
+  blocks?: boolean;
 };
 
 export type Token = {

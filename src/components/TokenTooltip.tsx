@@ -11,6 +11,18 @@ export function TokenTooltip({ token, x, y }: { token: Token; x: number; y: numb
   const s = token.stats;
   const hpPct = s.hp_max > 0 ? Math.max(0, Math.min(100, (s.hp_current / s.hp_max) * 100)) : 0;
 
+  if (s.kind === "cenario") {
+    return (
+      <div className="token-tooltip" style={{ left: x, top: y }} role="status" aria-live="polite">
+        <div className="flex items-center gap-2">
+          <span aria-hidden>{s.icon}</span>
+          <p className="min-w-0 truncate font-display text-lg font-bold">{token.label}</p>
+        </div>
+        <p className="mt-1 text-xs text-foam/70">{s.blocks ? "Bloqueia a passagem" : "Não bloqueia a passagem"}</p>
+      </div>
+    );
+  }
+
   return (
     <div
       className="token-tooltip"

@@ -49,17 +49,31 @@ import {
 import type { Abilities, AbilityKey, Character, CharacterDetails, RollResult, SkillKey } from "@/lib/types";
 
 export default function FichaPage() {
+  const { id } = useParams<{ id: string }>();
   return (
     <RequireAuth>
-      <CharacterEditor />
+      <CharacterSheet characterId={id} />
     </RequireAuth>
   );
 }
 
 type RollToast = RollResult & { label: string; key: number };
 
-function CharacterEditor() {
-  const { id } = useParams<{ id: string }>();
+/**
+ * Ficha completa do personagem. Usada tanto na página /fichas/[id] quanto,
+ * em modo `embedded`, dentro do modal flutuante da mesa ("Minha ficha" e
+ * a visão do mestre sobre a ficha de qualquer jogador).
+ */
+export function CharacterSheet({
+  characterId,
+  embedded = false,
+  onClose,
+}: {
+  characterId: string;
+  embedded?: boolean;
+  onClose?: () => void;
+}) {
+  const id = characterId;
   const router = useRouter();
   const { user } = useUser();
   const [char, setChar] = useState<Character | null>(null);
@@ -242,7 +256,8 @@ function CharacterEditor() {
     if (error) return setMessage(error.message);
     deleteAvatar(char.avatar_url).catch(() => {});
     setDirty(false);
-    router.push("/fichas");
+    if (embedded) onClose?.();
+    else router.push("/fichas");
   }
 
   if (status === "loading") return <p className="p-8 text-dim">Abrindo a ficha…</p>;
@@ -251,9 +266,15 @@ function CharacterEditor() {
       <div className="mx-auto max-w-xl px-4 py-12">
         <h1 className="font-display text-2xl font-bold">Ficha não encontrada</h1>
         <p className="mt-2 text-dim">Ela pode ter sido excluída ou pertence a outra conta.</p>
-        <Link href="/fichas" className="btn btn-primary mt-6">
-          Voltar às fichas
-        </Link>
+        {embedded ? (
+          <button className="btn btn-primary mt-6" onClick={onClose}>
+            Fechar
+          </button>
+        ) : (
+          <Link href="/fichas" className="btn btn-primary mt-6">
+            Voltar às fichas
+          </Link>
+        )}
       </div>
     );
 
@@ -311,10 +332,16 @@ function CharacterEditor() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-32 pt-8">
-      <Link href="/fichas" className="text-sm font-semibold text-ember hover:underline">
-        ← Todas as fichas
-      </Link>
+    <div className={embedded ? "px-4 pb-8 pt-2" : "mx-auto max-w-6xl px-4 pb-32 pt-8"}>
+      {embedded ? (
+        <button className="text-sm font-semibold text-ember hover:underline" onClick={onClose}>
+          ← Fechar ficha
+        </button>
+      ) : (
+        <Link href="/fichas" className="text-sm font-semibold text-ember hover:underline">
+          ← Todas as fichas
+        </Link>
+      )}
 
       {/* ---------- Identidade ---------- */}
       <section id="identidade" className="mt-4 flex scroll-mt-20 flex-col gap-5 sm:flex-row sm:items-center">
@@ -1117,14 +1144,26 @@ function CharacterEditor() {
       )}
 
       {/* ---------- Barra de salvar ---------- */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t-2 border-brass-deep bg-vellum/95">
+      <div className={embedded ? "sticky bottom-0 z-20 -mx-4 mt-6 border-t-2 border-brass-deep bg-vellum/95" : "fixed inset-x-0 bottom-0 z-20 border-t-2 border-brass-deep bg-vellum/95"}>
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <span className="text-sm text-dim" role="status">
             {message || (dirty ? "Alterações não salvas." : "Tudo salvo.")}
           </span>
-          <button className="btn btn-primary ml-auto" onClick={save} disabled={!dirty || saving}>
-            {saving ? "Salvando…" : "Salvar ficha"}
-          </button>
+          {embedded && (
+            <span className="ml-auto flex gap-2">
+              <button className="btn btn-ghost border border-rule" onClick={onClose}>
+                Fechar
+              </button>
+              <button className="btn btn-primary" onClick={save} disabled={!dirty || saving}>
+                {saving ? "Salvando…" : "Salvar ficha"}
+              </button>
+            </span>
+          )}
+          {!embedded && (
+            <button className="btn btn-primary ml-auto" onClick={save} disabled={!dirty || saving}>
+              {saving ? "Salvando…" : "Salvar ficha"}
+            </button>
+          )}
         </div>
       </div>
     </div>
