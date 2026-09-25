@@ -95,6 +95,14 @@ Permissões: cada jogador move/remove os próprios tokens; o mestre (dono da mes
 - **Talentos**: catálogo com os 42 talentos oficiais (nome em português e inglês, pré-requisito e bônus de atributo). Os escolhidos ficam em `characters.feats` (jsonb). Alerta, Observador, Mobilidade e Robusto já entram nos cálculos da ficha.
 - Dados em `src/lib/progressao.ts`.
 
+## Persistência da ficha (salvar/carregar)
+
+- O botão "Salvar ficha" envia explicitamente **todas** as colunas: nome, raça, classe, nível, atributos, PV, CA, deslocamento, tendência, equipamento (armadura/escudo/armas/foco), subclasse, talentos, XP, moedas, recursos, proficiências em ferramentas, mochila, magias, anotações, `details` (sub-raça, antecedente, perícias, tendência de atributo do antecedente, inspiração, dados de vida) e o **peso total** (`total_weight`), recalculado na hora de salvar a partir da mochila + moedas + equipamento.
+- Depois de salvar, o app busca de volta a linha exatamente como o Supabase gravou (`select().single()`) e atualiza a ficha na tela com ela — assim a ficha nunca fica dessincronizada do banco. Aparece um toast verde "✅ Ficha salva com sucesso!" no canto da tela.
+- **Armas não duplicam dados**: cada arma equipada guarda só o `id` do catálogo (`src/lib/equipamento.ts`); nome, dano, tipo de dano, maestria (regra 2024) e peso são resolvidos dali na hora de exibir. Isso evita divergência se o catálogo for atualizado depois.
+- **Ao carregar** (`normalizeCharacter`, em `src/lib/dnd.ts`): todo campo tem um valor seguro de reserva mesmo que a coluna esteja ausente, `null` ou num formato inesperado (ficha salva antes de uma coluna existir, por exemplo) — arrays viram `[]`, objetos viram `{}` preenchido com zeros, números inválidos viram `0`. A Carga (peso) é calculada direto no corpo do componente a partir do estado já carregado, então aparece correta assim que a ficha abre, sem precisar de nenhuma interação.
+- **Se você estiver vindo de uma versão anterior do projeto**, rode o `supabase/schema.sql` de novo: ele adiciona a coluna `total_weight` (as demais colunas de equipamento/mochila/moedas já existiam nas versões anteriores).
+
 ## Experiência, mochila, moedas e carga
 
 - **XP** (coluna `characters.xp`): barra de progresso na aba Progressão com a tabela oficial (300, 900, 2.700… 355.000). Campo para somar a XP da sessão; ao atingir o próximo nível aparece o aviso "Hora de subir de nível!" com botão para subir.

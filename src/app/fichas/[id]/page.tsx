@@ -81,6 +81,7 @@ export function CharacterSheet({
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [savedToast, setSavedToast] = useState(false);
   const [roll, setRoll] = useState<RollToast | null>(null);
   const rollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tab, setTab] = useState<Tab>("ficha");
@@ -204,7 +205,11 @@ export function CharacterSheet({
   async function save() {
     if (!char) return;
     setSaving(true);
-    // Envia só as colunas da ficha; a posse (user_id) nunca é alterada aqui
+    // Envia explicitamente todas as colunas da ficha; a posse (user_id) nunca é alterada aqui.
+    // O peso total é recalculado agora, na hora de salvar, para ir sempre coerente com o
+    // inventário, as moedas e o equipamento atuais.
+    const ac = derived?.ac.total ?? char.ac;
+    const weight = totalLoad(char.inventory, char.coins, equipmentWeights(char.equipment));
     const payload = {
       name: char.name,
       race: char.race || null,
@@ -213,8 +218,12 @@ export function CharacterSheet({
       abilities: char.abilities,
       hp_current: char.hp_current,
       hp_max: char.hp_max,
-      ac: derived?.ac.total ?? char.ac,
+      ac,
+      speed: char.speed,
       alignment: char.alignment || null,
+      // Armas ficam dentro de equipment.weapons (cada uma referencia o catálogo por id;
+      // nome, dano, tipo, maestria e peso são resolvidos de lá — ver src/lib/equipamento.ts —
+      // então não duplicamos esses dados na ficha, evitando divergência se o catálogo mudar).
       equipment: char.equipment,
       subclass: char.subclass || null,
       feats: char.feats,
@@ -226,13 +235,20 @@ export function CharacterSheet({
       spells: char.spells,
       notes: char.notes,
       details: char.details,
+      total_weight: Math.round(weight * 100) / 100,
       updated_at: new Date().toISOString(),
     };
-    const { error } = await supabase.from("characters").update(payload).eq("id", char.id);
+    // Pede de volta a linha como o banco realmente a gravou: fecha o ciclo e garante que a
+    // ficha na tela nunca fica dessincronizada do que está persistido, mesmo que algum
+    // valor tenha sido normalizado/arredondado pelo Postgres.
+    const { data, error } = await supabase.from("characters").update(payload).eq("id", char.id).select("*").single();
     setSaving(false);
     if (error) return setMessage(`Não foi possível salvar: ${error.message}`);
+    if (data) setChar(normalizeCharacter(data));
     setDirty(false);
-    setMessage("Ficha salva.");
+    setMessage("Ficha salva com sucesso!");
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 2500);
   }
 
   /** O retrato é salvo na hora, sem depender do botão "Salvar ficha". */
@@ -1140,6 +1156,13 @@ export function CharacterSheet({
             {roll.crit === "critico" && " — 20 natural!"}
             {roll.crit === "falha" && " — 1 natural."}
           </p>
+        </div>
+      )}
+
+      {/* ---------- Toast: ficha salva ---------- */}
+      {savedToast && (
+        <div className="save-toast" role="status" aria-live="polite">
+          ✅ Ficha salva com sucesso!
         </div>
       )}
 

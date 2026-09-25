@@ -30,6 +30,7 @@ alter table public.characters add column if not exists feats jsonb not null defa
 alter table public.characters add column if not exists xp int not null default 0;  -- pontos de experiência
 alter table public.characters add column if not exists coins jsonb not null
   default '{"pc":0,"pp":0,"ep":0,"po":0,"pl":0}'::jsonb;  -- moedas (PC, PP, EP, PO, PL)
+alter table public.characters add column if not exists total_weight numeric not null default 0;  -- peso total carregado (lb), recalculado a cada salvamento
 alter table public.characters add column if not exists resources jsonb not null
   default '{"used":{},"custom":[],"slotsUsed":[],"pactUsed":0}'::jsonb;  -- usos de recursos e espaços de magia
 alter table public.characters add column if not exists tool_profs jsonb not null default '[]'::jsonb;  -- proficiências em ferramentas

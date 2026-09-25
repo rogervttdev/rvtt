@@ -1109,6 +1109,28 @@ body {
     padding: 0.5rem;
     box-shadow: 0 10px 24px -8px rgb(0 0 0 / 0.5);
   }
+  /* Toast de confirmação de salvamento */
+  .save-toast {
+    position: fixed;
+    top: 4.5rem;
+    right: 1rem;
+    z-index: 90;
+    border-radius: 0.5rem;
+    border: 1px solid #3a6b2a;
+    background: linear-gradient(to bottom, #6e9a57, #4c7a36);
+    color: #fff;
+    padding: 0.65rem 1.1rem;
+    font-weight: 700;
+    box-shadow: 0 10px 24px -8px rgb(0 0 0 / 0.5);
+    animation: save-toast-in 200ms ease-out, save-toast-out 300ms ease-in 2200ms forwards;
+  }
+  @keyframes save-toast-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes save-toast-out {
+    to { opacity: 0; transform: translateY(-8px); }
+  }
   .panel {
     border: 1px solid var(--color-rule);
     background-color: var(--color-vellum);

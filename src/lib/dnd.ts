@@ -38,9 +38,27 @@ export function initials(label: string | null | undefined) {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-// Garante formato válido mesmo se a linha do banco tiver campos nulos
+// Garante formato válido mesmo se a linha do banco tiver campos nulos, ausentes
+// (fichas salvas antes de uma coluna existir) ou com um formato inesperado.
+function safeObj(v: unknown): Record<string, unknown> {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+}
+function safeArr<T = unknown>(v: unknown): T[] {
+  return Array.isArray(v) ? (v as T[]) : [];
+}
+function safeNum(v: unknown, fallback = 0): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function normalizeCharacter(row: any): Character {
+  const resources = safeObj(row.resources);
+  const coins = safeObj(row.coins);
+  const equipment = safeObj(row.equipment);
+  const details = safeObj(row.details);
+  const bonusFocus = safeObj(details.backgroundFocus);
+
   return {
     id: row.id,
     user_id: row.user_id ?? row.owner_id,
@@ -48,52 +66,53 @@ export function normalizeCharacter(row: any): Character {
     avatar_url: row.avatar_url ?? null,
     alignment: row.alignment ?? "",
     subclass: row.subclass ?? "",
-    xp: Math.max(0, Number(row.xp ?? 0)),
+    xp: Math.max(0, safeNum(row.xp)),
+    total_weight: Math.max(0, safeNum(row.total_weight)),
     resources: {
-      used: row.resources?.used && typeof row.resources.used === "object" ? row.resources.used : {},
-      custom: Array.isArray(row.resources?.custom) ? row.resources.custom : [],
-      slotsUsed: Array.isArray(row.resources?.slotsUsed) ? row.resources.slotsUsed : [],
-      pactUsed: Number(row.resources?.pactUsed ?? 0),
+      used: safeObj(resources.used) as Record<string, number>,
+      custom: safeArr(resources.custom),
+      slotsUsed: safeArr<number>(resources.slotsUsed),
+      pactUsed: safeNum(resources.pactUsed),
     },
-    tool_profs: Array.isArray(row.tool_profs) ? row.tool_profs : [],
+    tool_profs: safeArr<string>(row.tool_profs),
     coins: {
-      pc: Number(row.coins?.pc ?? 0),
-      pp: Number(row.coins?.pp ?? 0),
-      ep: Number(row.coins?.ep ?? 0),
-      po: Number(row.coins?.po ?? 0),
-      pl: Number(row.coins?.pl ?? 0),
+      pc: safeNum(coins.pc),
+      pp: safeNum(coins.pp),
+      ep: safeNum(coins.ep),
+      po: safeNum(coins.po),
+      pl: safeNum(coins.pl),
     },
-    feats: Array.isArray(row.feats) ? row.feats.filter((f: unknown) => typeof f === "string") : [],
+    feats: safeArr(row.feats).filter((f: unknown) => typeof f === "string"),
     equipment: {
-      armor: row.equipment?.armor ?? null,
-      shield: Boolean(row.equipment?.shield),
-      weapons: Array.isArray(row.equipment?.weapons) ? row.equipment.weapons : [],
-      focus: row.equipment?.focus ?? null,
-      acBonus: Number(row.equipment?.acBonus ?? 0),
+      armor: (equipment.armor as string | null) ?? null,
+      shield: Boolean(equipment.shield),
+      weapons: safeArr(equipment.weapons),
+      focus: (equipment.focus as string | null) ?? null,
+      acBonus: safeNum(equipment.acBonus),
     },
     race: row.race ?? "",
     class: row.class ?? "",
-    level: Number(row.level ?? 1),
-    abilities: { ...DEFAULT_ABILITIES, ...(row.abilities ?? {}) },
-    hp_current: Number(row.hp_current ?? 0),
-    hp_max: Number(row.hp_max ?? 0),
-    ac: Number(row.ac ?? 10),
-    speed: Number(row.speed ?? 9),
-    inventory: Array.isArray(row.inventory) ? row.inventory : [],
-    spells: Array.isArray(row.spells) ? row.spells : [],
+    level: safeNum(row.level, 1),
+    abilities: { ...DEFAULT_ABILITIES, ...safeObj(row.abilities) },
+    hp_current: safeNum(row.hp_current),
+    hp_max: safeNum(row.hp_max),
+    ac: safeNum(row.ac, 10),
+    speed: safeNum(row.speed, 9),
+    inventory: safeArr(row.inventory),
+    spells: safeArr(row.spells),
     notes: row.notes ?? "",
     details: {
-      subrace: row.details?.subrace ?? "",
-      background: row.details?.background ?? "",
-      skills: Array.isArray(row.details?.skills) ? row.details.skills : [],
-      bonusChoices: Array.isArray(row.details?.bonusChoices) ? row.details.bonusChoices : [],
-      backgroundAbilityMode: row.details?.backgroundAbilityMode === "focus" ? "focus" : "even",
+      subrace: (details.subrace as string) ?? "",
+      background: (details.background as string) ?? "",
+      skills: safeArr(details.skills),
+      bonusChoices: safeArr(details.bonusChoices),
+      backgroundAbilityMode: details.backgroundAbilityMode === "focus" ? "focus" : "even",
       backgroundFocus: {
-        plus2: row.details?.backgroundFocus?.plus2 ?? null,
-        plus1: row.details?.backgroundFocus?.plus1 ?? null,
+        plus2: (bonusFocus.plus2 as AbilityKey | null) ?? null,
+        plus1: (bonusFocus.plus1 as AbilityKey | null) ?? null,
       },
-      inspiration: Boolean(row.details?.inspiration),
-      hitDiceSpent: Number(row.details?.hitDiceSpent ?? 0),
+      inspiration: Boolean(details.inspiration),
+      hitDiceSpent: safeNum(details.hitDiceSpent),
     },
     created_at: row.created_at ?? "",
     updated_at: row.updated_at ?? "",

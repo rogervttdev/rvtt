@@ -78,6 +78,8 @@ export type Character = {
   user_id: string;
   name: string;
   avatar_url: string | null;
+  /** Peso total carregado (armadura + escudo + armas + foco + mochila + moedas), em libras. Recalculado a cada mudança e salvo para consulta rápida (ex.: fora da ficha, na mesa). */
+  total_weight: number;
   alignment: string | null;
   equipment: Equipment;
   subclass: string | null;
