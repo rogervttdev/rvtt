@@ -11,6 +11,8 @@ import {
   DAMAGE_HELP,
   FOCI,
   FOCUS_GROUP_LABEL,
+  MASTERY_HELP,
+  MASTERY_LABEL,
   PROP_HELP,
   PROP_LABEL,
   SHIELD,
@@ -21,6 +23,7 @@ import {
   findArmor,
   findFocus,
   findWeapon,
+  maneuverDc,
   weaponProficient,
   type ArmorDef,
   type Attack,
@@ -213,6 +216,24 @@ export function EquipmentSection({ equipment: eq, mods, scores, prof, cls, race,
         </ul>
       )}
 
+      {/* Agarrar e Empurrar (regra 2024): parte do Ataque desarmado, sem rolagem de ataque */}
+      <div className="panel mt-4 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-display text-lg font-bold">Manobras: Agarrar e Empurrar</h3>
+          <Help
+            title="Agarrar e Empurrar"
+            paragraphs={[
+              "Fazem parte do Ataque desarmado: em vez de causar dano, você escolhe Agarrar ou Empurrar. Não há rolagem de ataque — o alvo é quem rola.",
+              "O alvo faz um teste de resistência de Força ou Destreza (a escolha é dele) contra a CD abaixo. Se falhar: Agarrar deixa o alvo Agarrado (deslocamento 0, desvantagem para atacar quem não seja você); Empurrar o afasta 3 m ou o derruba caído, à sua escolha.",
+              "Só funciona em criaturas do seu tamanho ou menores. Vale uma vez por Ataque desarmado, no lugar do dano.",
+            ]}
+          />
+          <span className="ml-auto text-sm text-dim">
+            CD para o alvo resistir: <strong className="font-display text-xl text-ember-deep">{maneuverDc(prof, mods)}</strong>
+          </span>
+        </div>
+      </div>
+
       {/* ---------- Catálogos ---------- */}
       <Picker open={picker === "armor"} title="Escolher armadura" onClose={() => setPicker(null)}>
         <button
@@ -330,6 +351,9 @@ function ArmorHelp({ armor }: { armor: ArmorDef }) {
 function PropChips({ weapon }: { weapon: WeaponDef }) {
   return (
     <>
+      {weapon.mastery && (
+        <Help title={`Maestria: ${MASTERY_LABEL[weapon.mastery]}`} label={`Maestria: ${MASTERY_LABEL[weapon.mastery]}`} paragraphs={[MASTERY_HELP[weapon.mastery], "Só dá para usar essa propriedade se uma característica da sua classe (Maestria de Armas) liberar essa arma para você — pergunte ao mestre se a mesa usa a regra 2024."]} />
+      )}
       {weapon.props.map((p) => (
         <Help
           key={p}

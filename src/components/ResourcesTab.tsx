@@ -44,8 +44,8 @@ export function ResourcesTab({ defs, resources, inspiration, onInspiration, onRe
         {/* Inspiração do mestre */}
         <div className="panel p-4">
           <div className="flex items-center gap-1.5">
-            <span className="font-display text-lg font-bold">Inspiração</span>
-            <Help title="Inspiração" paragraphs={["Dada pelo mestre por boa interpretação. Gaste para ter vantagem em uma rolagem. Não volta com descanso: só quando o mestre der outra."]} />
+            <span className="font-display text-lg font-bold">Inspiração Heroica</span>
+            <Help title="Inspiração Heroica" paragraphs={["Dada pelo mestre por boa interpretação. Regra 2024: gaste para rerrolar qualquer dado assim que vê o resultado (não só o d20), usando o novo valor. Não volta com descanso: só quando o mestre der outra, ou um aliado te passar a dele."]} />
           </div>
           <button className={`btn mt-2 w-full ${inspiration ? "btn-primary" : "btn-ghost border border-rule"}`} aria-pressed={inspiration} onClick={() => onInspiration(!inspiration)}>
             {inspiration ? "Tenho inspiração (toque para gastar)" : "Sem inspiração"}

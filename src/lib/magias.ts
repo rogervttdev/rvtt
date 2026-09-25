@@ -41,21 +41,33 @@ export const SCHOOL_HELP: Record<string, string> = {
 
 type CasterKind = "full" | "half" | "third" | "pact";
 
-type Caster = { ability: AbilityKey; kind: CasterKind; prepares: string | null; list: string };
+/** Regra 2024: as magias de todas as classes vêm de 3 grandes listas — Arcana, Divina e Primordial. */
+export type SpellList = "arcana" | "divina" | "primordial";
+
+export const SPELL_LIST_LABEL: Record<SpellList, string> = { arcana: "Arcana", divina: "Divina", primordial: "Primordial" };
+
+/** Quais classes (do SRD 5.1, usadas para marcar cada magia) pertencem a cada grande lista de 2024. */
+export const SPELL_LIST_CLASSES: Record<SpellList, string[]> = {
+  arcana: ["Bardo", "Feiticeiro", "Bruxo", "Mago"],
+  divina: ["Clérigo", "Paladino"],
+  primordial: ["Druida", "Patrulheiro"],
+};
+
+type Caster = { ability: AbilityKey; kind: CasterKind; prepares: string | null; list: string; broadList: SpellList };
 
 const CASTERS: Record<string, Caster> = {
-  Bardo: { ability: "cha", kind: "full", prepares: null, list: "Bardo" },
-  Clérigo: { ability: "wis", kind: "full", prepares: "mod. de Sabedoria + nível de clérigo", list: "Clérigo" },
-  Druida: { ability: "wis", kind: "full", prepares: "mod. de Sabedoria + nível de druida", list: "Druida" },
-  Feiticeiro: { ability: "cha", kind: "full", prepares: null, list: "Feiticeiro" },
-  Mago: { ability: "int", kind: "full", prepares: "mod. de Inteligência + nível de mago", list: "Mago" },
-  Paladino: { ability: "cha", kind: "half", prepares: "mod. de Carisma + metade do nível de paladino", list: "Paladino" },
-  Patrulheiro: { ability: "wis", kind: "half", prepares: null, list: "Patrulheiro" },
-  Bruxo: { ability: "cha", kind: "pact", prepares: null, list: "Bruxo" },
+  Bardo: { ability: "cha", kind: "full", prepares: null, list: "Bardo", broadList: "arcana" },
+  Clérigo: { ability: "wis", kind: "full", prepares: "mod. de Sabedoria + nível de clérigo", list: "Clérigo", broadList: "divina" },
+  Druida: { ability: "wis", kind: "full", prepares: "mod. de Sabedoria + nível de druida", list: "Druida", broadList: "primordial" },
+  Feiticeiro: { ability: "cha", kind: "full", prepares: null, list: "Feiticeiro", broadList: "arcana" },
+  Mago: { ability: "int", kind: "full", prepares: "mod. de Inteligência + nível de mago", list: "Mago", broadList: "arcana" },
+  Paladino: { ability: "cha", kind: "half", prepares: "mod. de Carisma + metade do nível de paladino", list: "Paladino", broadList: "divina" },
+  Patrulheiro: { ability: "wis", kind: "half", prepares: null, list: "Patrulheiro", broadList: "primordial" },
+  Bruxo: { ability: "cha", kind: "pact", prepares: null, list: "Bruxo", broadList: "arcana" },
 };
 const SUBCLASS_CASTERS: Record<string, Caster> = {
-  "Cavaleiro Arcano": { ability: "int", kind: "third", prepares: null, list: "Mago" },
-  "Trapaceiro Arcano": { ability: "int", kind: "third", prepares: null, list: "Mago" },
+  "Cavaleiro Arcano": { ability: "int", kind: "third", prepares: null, list: "Mago", broadList: "arcana" },
+  "Trapaceiro Arcano": { ability: "int", kind: "third", prepares: null, list: "Mago", broadList: "arcana" },
 };
 
 export function casterFor(className?: string | null, subclass?: string | null): Caster | null {

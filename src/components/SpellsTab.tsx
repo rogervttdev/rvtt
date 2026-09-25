@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Help, HelpCalc } from "./Help";
 import { Picker } from "./Picker";
 import { ABILITY_LABEL, formatMod, uid } from "@/lib/dnd";
-import { CIRCLE_LABEL, SCHOOL_HELP, casterFor, maxCircle, spellSlots, type SpellDef } from "@/lib/magias";
+import { CIRCLE_LABEL, SCHOOL_HELP, SPELL_LIST_CLASSES, SPELL_LIST_LABEL, casterFor, maxCircle, spellSlots, type SpellDef } from "@/lib/magias";
 import type { ClassDef } from "@/lib/regras";
 import type { Abilities, Resources, Spell } from "@/lib/types";
 
@@ -91,6 +91,7 @@ export function SpellsTab({ spells, cls, subclass, level, mods, prof, resources,
           <Help
             title="Como funcionam as magias"
             paragraphs={[
+              "Regra 2024: as magias vêm de três grandes listas — Arcana (Bardo, Feiticeiro, Bruxo, Mago), Divina (Clérigo, Paladino) e Primordial (Druida, Patrulheiro). O grimório já filtra pela lista da sua classe.",
               "Truques (círculo 0) podem ser lançados à vontade. Magias de 1º círculo em diante gastam um espaço de magia do mesmo círculo ou maior.",
               "Os espaços gastos voltam no descanso longo (para o bruxo, no curto). Toque em “Lançar” para gastar o espaço automaticamente.",
               "Concentração: você só mantém uma magia assim por vez, e pode perdê-la ao sofrer dano (teste de Constituição).",
@@ -259,7 +260,8 @@ export function SpellsTab({ spells, cls, subclass, level, mods, prof, resources,
         open={catalog}
         onClose={() => setCatalog(false)}
         spells={srd}
-        classList={caster?.list ?? cls?.name}
+        listClasses={caster ? SPELL_LIST_CLASSES[caster.broadList] : undefined}
+        listLabel={caster ? SPELL_LIST_LABEL[caster.broadList] : undefined}
         maxLevel={caster ? maxCircle(slots) : 9}
         has={has}
         onToggle={(def) =>
@@ -355,7 +357,8 @@ function SpellCatalog({
   open,
   onClose,
   spells,
-  classList,
+  listClasses,
+  listLabel,
   maxLevel,
   has,
   onToggle,
@@ -363,7 +366,8 @@ function SpellCatalog({
   open: boolean;
   onClose: () => void;
   spells: SpellDef[] | null;
-  classList?: string;
+  listClasses?: string[];
+  listLabel?: string;
   maxLevel: number;
   has: (id: string) => boolean;
   onToggle: (def: SpellDef) => void;
@@ -379,11 +383,11 @@ function SpellCatalog({
       (spells ?? []).filter(
         (s) =>
           (circle === "todos" || s.level === circle) &&
-          (!onlyMine || !classList || s.classes.includes(classList)) &&
+          (!onlyMine || !listClasses || s.classes.some((c) => listClasses.includes(c))) &&
           (!upToMax || s.level <= maxLevel) &&
           (!q || s.name.toLowerCase().includes(q) || s.en.toLowerCase().includes(q) || (s.summary ?? "").toLowerCase().includes(q) || s.mech.toLowerCase().includes(q)),
       ),
-    [spells, circle, onlyMine, upToMax, classList, maxLevel, q],
+    [spells, circle, onlyMine, upToMax, listClasses, maxLevel, q],
   );
 
   return (
@@ -399,10 +403,10 @@ function SpellCatalog({
               </option>
             ))}
           </select>
-          {classList && (
+          {listClasses && (
             <label className="flex items-center gap-1.5">
               <input type="checkbox" className="h-4 w-4 accent-[#a8431f]" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} />
-              Só da lista de {classList}
+              Só da lista {listLabel} ({listClasses.join(", ")})
             </label>
           )}
           <label className="flex items-center gap-1.5">

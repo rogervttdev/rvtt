@@ -87,6 +87,11 @@ export function normalizeCharacter(row: any): Character {
       background: row.details?.background ?? "",
       skills: Array.isArray(row.details?.skills) ? row.details.skills : [],
       bonusChoices: Array.isArray(row.details?.bonusChoices) ? row.details.bonusChoices : [],
+      backgroundAbilityMode: row.details?.backgroundAbilityMode === "focus" ? "focus" : "even",
+      backgroundFocus: {
+        plus2: row.details?.backgroundFocus?.plus2 ?? null,
+        plus1: row.details?.backgroundFocus?.plus1 ?? null,
+      },
       inspiration: Boolean(row.details?.inspiration),
       hitDiceSpent: Number(row.details?.hitDiceSpent ?? 0),
     },

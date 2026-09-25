@@ -27,21 +27,23 @@ export function ProgressionTab({ cls, level, subclass, feats, xp, onXp, onLevel,
 
   const group = cls ? SUBCLASSES[cls.name] : undefined;
   const sub = group?.options.find((o) => o.name === subclass);
+  const isCustomSub = Boolean(subclass && group && !sub);
   const subUnlocked = Boolean(group && level >= group.level);
+  const [customSub, setCustomSub] = useState(isCustomSub ? subclass : "");
 
   const rows = useMemo(() => {
     if (!cls) return [] as Row[];
     const list: Row[] = (CLASS_FEATURES[cls.name] ?? []).map((f) => ({ ...f, source: "classe" as const }));
     if (sub) list.push(...sub.features.map((f) => ({ ...f, source: "subclasse" as const })));
-    else if (group) {
-      // Níveis em que a subclasse dá algo, para lembrar o jogador
+    else if (group && !subclass) {
+      // Níveis em que a subclasse dá algo, para lembrar o jogador (só enquanto nada foi escolhido)
       const levels = new Set(group.options.flatMap((o) => o.features.map((f) => f.level)));
       for (const l of levels)
         list.push({ level: l, name: `Característica de ${group.label}`, desc: `Escolha ${group.label.toLowerCase()} acima para ver o que você ganha neste nível.`, source: "pendente" });
     }
     const rank = { classe: 0, subclasse: 1, pendente: 2 } as const;
     return list.sort((a, b) => a.level - b.level || rank[a.source] - rank[b.source]);
-  }, [cls, sub, group]);
+  }, [cls, sub, group, subclass]);
 
   const byLevel = useMemo(() => {
     const map = new Map<number, Row[]>();
@@ -130,6 +132,41 @@ export function ProgressionTab({ cls, level, subclass, feats, xp, onXp, onLevel,
                 </div>
               );
             })}
+
+            {/* Subclasse personalizada: para quem quiser usar uma opção fora do SRD, por sua conta e risco */}
+            <div className={`panel flex flex-col p-4 ${isCustomSub ? "ring-2 ring-brass-deep" : ""} ${!subUnlocked ? "opacity-80" : ""}`}>
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-display text-lg font-bold">Personalizada</h3>
+                <Help
+                  title="Subclasse personalizada"
+                  paragraphs={[
+                    "Este app só traz, pronta, a subclasse de cada classe que está no documento de regras abertas (SRD). As demais vêm de livros pagos e têm direitos autorais da editora, então não entram no catálogo.",
+                    "Se a sua mesa usa uma dessas outras opções, digite o nome aqui. Você continua com só uma subclasse por personagem — escolher esta substitui a de cima, e escolher a de cima substitui esta.",
+                    "As características dela não aparecem sozinhas na linha do tempo: anote-as você mesmo (por exemplo, nas anotações da ficha).",
+                  ]}
+                />
+              </div>
+              <p className="mt-1 flex-1 text-sm text-dim">Nome de uma subclasse fora do catálogo, combinada com o mestre da mesa.</p>
+              <form
+                className="mt-2 flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (subUnlocked && customSub.trim()) onSubclass(customSub.trim());
+                }}
+              >
+                <input
+                  className="field flex-1"
+                  value={customSub}
+                  onChange={(e) => setCustomSub(e.target.value)}
+                  placeholder="ex.: Círculo da Lua"
+                  disabled={!subUnlocked}
+                  aria-label="Nome da subclasse personalizada"
+                />
+                <button type="submit" className={`btn ${isCustomSub ? "btn-primary" : "btn-ghost border border-rule"}`} disabled={!subUnlocked || !customSub.trim()}>
+                  {isCustomSub ? "Salva" : subUnlocked ? "Usar" : `No ${group.level}º nível`}
+                </button>
+              </form>
+            </div>
           </div>
         </section>
       )}
@@ -151,6 +188,12 @@ export function ProgressionTab({ cls, level, subclass, feats, xp, onXp, onLevel,
             </span>
           )}
         </div>
+
+        {isCustomSub && (
+          <p className="mt-3 rounded-md border border-brass-deep bg-brass/15 px-3 py-2 text-sm">
+            Subclasse personalizada (<strong>{subclass}</strong>): fora do catálogo, então as características dela não aparecem sozinhas aqui embaixo. Anote-as você mesmo.
+          </p>
+        )}
 
         <ol className="timeline mt-4">
           {byLevel

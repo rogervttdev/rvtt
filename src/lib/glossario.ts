@@ -8,19 +8,19 @@ export const GLOSSARIO = {
   ],
   raca: [
     "A raça é o povo de onde seu herói vem: humano, elfo, anão e outros.",
-    "Ela soma bônus em alguns atributos, define seu deslocamento e dá habilidades naturais, como enxergar no escuro. Os bônus já são aplicados sozinhos na ficha.",
+    "Ela define seu deslocamento e dá habilidades naturais, como enxergar no escuro. Na regra 2024, a raça não soma mais bônus de atributo — isso agora vem do antecedente.",
   ],
   subraca: [
     "Algumas raças se dividem em sub-raças, grupos com costumes e talentos um pouco diferentes.",
-    "A sub-raça soma mais um bônus de atributo e uma habilidade própria.",
+    "A sub-raça dá uma habilidade própria (o bônus de atributo, na regra 2024, vem do antecedente, não da sub-raça).",
   ],
   classe: [
     "A classe é a profissão de aventureiro do seu herói: o que ele faz melhor no grupo.",
     "Ela decide quantos pontos de vida você tem (pelo dado de vida), em quais testes de resistência você é treinado, quais perícias pode escolher e quais poderes ganha a cada nível.",
   ],
   antecedente: [
-    "O antecedente é o que seu herói fazia antes de virar aventureiro: soldado, nobre, órfão das ruas…",
-    "Ele ajuda a imaginar a história do personagem e dá duas perícias treinadas, que já aparecem marcadas na ficha.",
+    "O antecedente é o que seu herói fazia antes de virar aventureiro: soldado, artesão, sábio…",
+    "Na regra 2024, ele ajuda a imaginar a história do personagem e dá o bônus de atributo, duas perícias treinadas, uma ferramenta e um Talento de Origem — tudo aplicado sozinho na ficha.",
   ],
   atributos: [
     "São os seis números que descrevem o corpo e a mente do herói: Força, Destreza, Constituição, Inteligência, Sabedoria e Carisma.",
@@ -36,8 +36,8 @@ export const GLOSSARIO = {
     "O botão coloca os maiores valores nos atributos mais importantes para a sua classe. Depois disso, o bônus da raça é somado por cima. Você pode trocar os valores à mão se quiser.",
   ],
   base_racial: [
-    "O número pequeno é o valor base, que você distribui. A etiqueta mostra o que a raça soma.",
-    "O valor final (base + raça) é o que conta para calcular o modificador.",
+    "O número pequeno é o valor base, que você distribui. A etiqueta mostra o que o antecedente soma (regra 2024: o bônus de atributo vem do antecedente, não da raça).",
+    "O valor final (base + antecedente) é o que conta para calcular o modificador.",
   ],
   proficiencia: [
     "O bônus de proficiência representa treino. Ele começa em +2 e sobe com o nível: +3 no 5º, +4 no 9º, +5 no 13º e +6 no 17º.",
@@ -78,8 +78,8 @@ export const GLOSSARIO = {
     "No 1º nível, o máximo é o valor cheio do seu dado de vida + modificador de Constituição. A cada nível seguinte, soma a média do dado + Constituição. A sugestão da ficha já faz essa conta.",
   ],
   inspiracao: [
-    "Inspiração é um prêmio que o mestre dá quando você interpreta bem o personagem, tem uma ideia brilhante ou faz o grupo rir.",
-    "Você pode gastá-la para ter vantagem numa rolagem: rola dois d20 e fica com o maior. Só dá para ter uma de cada vez.",
+    "Inspiração Heroica é um prêmio que o mestre dá quando você interpreta bem o personagem, tem uma ideia brilhante ou faz o grupo rir.",
+    "Regra 2024: ao invés de dar vantagem, ela deixa você rerrolar qualquer dado (não só o d20) assim que vê o resultado, e usar o novo valor, para melhor ou para pior. Só dá para ter uma de cada vez; se ganhar outra e já tiver uma, pode passá-la a um aliado sem inspiração.",
   ],
   percepcao_passiva: [
     "É o quanto você nota sem estar procurando: 10 + seu bônus de Percepção.",

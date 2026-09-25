@@ -66,6 +66,9 @@ export type CharacterDetails = {
   skills: SkillKey[];
   /** Escolhas de +1 do Meio-Elfo. */
   bonusChoices: AbilityKey[];
+  /** Como distribuir o bônus de atributo do antecedente (regra 2024): +1/+1/+1 ou +2/+1. */
+  backgroundAbilityMode: "even" | "focus";
+  backgroundFocus: { plus2: AbilityKey | null; plus1: AbilityKey | null };
   inspiration: boolean;
   hitDiceSpent: number;
 };

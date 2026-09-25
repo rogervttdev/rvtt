@@ -1,6 +1,10 @@
 /**
  * Equipamento do Livro do Jogador (D&D 5e), nomes da edição brasileira.
  * Distâncias convertidas para metros (1,5 m = 5 pés).
+ *
+ * A propriedade de Maestria de cada arma (mastery) vem da revisão 2024 (D&D 5.5),
+ * SRD 5.2 da Wizards of the Coast LLC, licença Creative Commons Attribution 4.0
+ * (CC-BY-4.0): https://creativecommons.org/licenses/by/4.0/legalcode
  */
 import type { Abilities, Equipment } from "./types";
 import type { ClassDef, RaceDef, SubraceDef } from "./regras";
@@ -68,6 +72,31 @@ export type WeaponProp =
 
 export type DamageType = "cortante" | "perfurante" | "concussão";
 
+/** Propriedades de Maestria de arma (regra 2024). Cada arma tem uma fixa. */
+export type WeaponMastery = "cleave" | "graze" | "nick" | "push" | "sap" | "slow" | "topple" | "vex";
+
+export const MASTERY_LABEL: Record<WeaponMastery, string> = {
+  cleave: "Fenda",
+  graze: "Roçar",
+  nick: "Fresta",
+  push: "Empurrão",
+  sap: "Enfraquecer",
+  slow: "Lentidão",
+  topple: "Derrubar",
+  vex: "Provocar",
+};
+
+export const MASTERY_HELP: Record<WeaponMastery, string> = {
+  cleave: "Se você acertar um golpe corpo a corpo, pode atacar de novo com a mesma arma contra uma segunda criatura ao alcance, a até 1,5 m da primeira. Se acertar, ela leva o dado de dano da arma (sem somar o modificador). Só uma vez por turno.",
+  graze: "Se o seu ataque errar a criatura, ela ainda leva o dano igual ao seu modificador de atributo (do mesmo tipo da arma). Um erro nunca é totalmente em vão.",
+  nick: "O ataque extra de uma arma Leve pode ser feito junto com a ação de Atacar, em vez de gastar a ação bônus. Só uma vez por turno.",
+  push: "Se você acertar, pode empurrar a criatura até 3 m para longe de você, se ela for do seu tamanho ou menor.",
+  sap: "Se você acertar, a criatura fica com desvantagem no próximo ataque dela antes do início do seu próximo turno.",
+  slow: "Se você acertar e causar dano, pode reduzir o deslocamento da criatura em 3 m até o início do seu próximo turno. Não acumula com outra Lentidão.",
+  topple: "Se você acertar, pode forçar a criatura a um teste de Constituição (CD 8 + seu modificador + proficiência) ou ela cai caída.",
+  vex: "Se você acertar e causar dano, ganha vantagem no seu próximo ataque contra essa criatura antes do fim do seu próximo turno.",
+};
+
 export type WeaponDef = {
   id: string;
   name: string;
@@ -82,6 +111,8 @@ export type WeaponDef = {
   price: string;
   /** Peso em libras (lb) */
   weight: number;
+  /** Propriedade de Maestria (regra 2024); ausente em armas fora do núcleo do SRD */
+  mastery?: WeaponMastery;
   desc: string;
   special?: string;
 };
@@ -94,47 +125,49 @@ export const WEAPON_GROUPS: { label: string; category: WeaponDef["category"]; ki
 ];
 
 export const WEAPONS: WeaponDef[] = [
+  // Ataque desarmado — regra 2024: qualquer criatura pode usar, sempre "treinado"
+  { id: "desarmado", name: "Ataque desarmado", category: "simples", kind: "corpo", damage: "1", damageType: "concussão", props: [], weight: 0, price: "—", desc: "Um soco, cotovelada ou joelhada. Todo mundo sabe usar. Ao acertar, você escolhe: causar dano, Agarrar ou Empurrar o alvo (veja Manobras, abaixo da lista de ataques)." },
   // Simples corpo a corpo
-  { id: "adaga", weight: 1, name: "Adaga", category: "simples", kind: "corpo", damage: "1d4", damageType: "perfurante", props: ["acuidade", "leve", "arremesso"], range: "6/18", price: "2 po", desc: "Lâmina curta, fácil de esconder e de arremessar. Todo aventureiro devia ter uma." },
-  { id: "azagaia", weight: 2, name: "Azagaia", category: "simples", kind: "corpo", damage: "1d6", damageType: "perfurante", props: ["arremesso"], range: "9/36", price: "5 pp", desc: "Lança leve feita para ser arremessada." },
-  { id: "bordao", weight: 4, name: "Bordão", category: "simples", kind: "corpo", damage: "1d6", damageType: "concussão", props: ["versatil"], versatile: "1d8", price: "2 pp", desc: "Um bastão longo de madeira. Arma favorita de magos e monges." },
-  { id: "clava", weight: 2, name: "Clava", category: "simples", kind: "corpo", damage: "1d4", damageType: "concussão", props: ["leve"], price: "1 pp", desc: "Um pedaço de pau firme. Simples e barata." },
-  { id: "clava-grande", weight: 10, name: "Clava grande", category: "simples", kind: "corpo", damage: "1d8", damageType: "concussão", props: ["duas_maos"], price: "2 pp", desc: "Um porrete enorme, usado com as duas mãos." },
-  { id: "foice-curta", weight: 2, name: "Foice curta", category: "simples", kind: "corpo", damage: "1d4", damageType: "cortante", props: ["leve"], price: "1 po", desc: "Ferramenta de colheita que também serve de arma." },
-  { id: "lanca", weight: 3, name: "Lança", category: "simples", kind: "corpo", damage: "1d6", damageType: "perfurante", props: ["arremesso", "versatil"], versatile: "1d8", range: "6/18", price: "1 po", desc: "Haste com ponta de metal. Dá para usar com uma ou duas mãos, ou arremessar." },
-  { id: "maca", weight: 4, name: "Maça", category: "simples", kind: "corpo", damage: "1d6", damageType: "concussão", props: [], price: "5 po", desc: "Cabo com uma cabeça pesada de metal. Clássica de clérigos." },
-  { id: "machadinha", weight: 2, name: "Machadinha", category: "simples", kind: "corpo", damage: "1d6", damageType: "cortante", props: ["leve", "arremesso"], range: "6/18", price: "5 po", desc: "Machado pequeno de uma mão, bom para arremessar." },
-  { id: "martelo-leve", weight: 2, name: "Martelo leve", category: "simples", kind: "corpo", damage: "1d4", damageType: "concussão", props: ["leve", "arremesso"], range: "6/18", price: "2 po", desc: "Martelo pequeno, equilibrado para arremesso." },
+  { id: "adaga", weight: 1, mastery: "nick", name: "Adaga", category: "simples", kind: "corpo", damage: "1d4", damageType: "perfurante", props: ["acuidade", "leve", "arremesso"], range: "6/18", price: "2 po", desc: "Lâmina curta, fácil de esconder e de arremessar. Todo aventureiro devia ter uma." },
+  { id: "azagaia", weight: 2, mastery: "slow", name: "Azagaia", category: "simples", kind: "corpo", damage: "1d6", damageType: "perfurante", props: ["arremesso"], range: "9/36", price: "5 pp", desc: "Lança leve feita para ser arremessada." },
+  { id: "bordao", weight: 4, mastery: "topple", name: "Bordão", category: "simples", kind: "corpo", damage: "1d6", damageType: "concussão", props: ["versatil"], versatile: "1d8", price: "2 pp", desc: "Um bastão longo de madeira. Arma favorita de magos e monges." },
+  { id: "clava", weight: 2, mastery: "slow", name: "Clava", category: "simples", kind: "corpo", damage: "1d4", damageType: "concussão", props: ["leve"], price: "1 pp", desc: "Um pedaço de pau firme. Simples e barata." },
+  { id: "clava-grande", weight: 10, mastery: "push", name: "Clava grande", category: "simples", kind: "corpo", damage: "1d8", damageType: "concussão", props: ["duas_maos"], price: "2 pp", desc: "Um porrete enorme, usado com as duas mãos." },
+  { id: "foice-curta", weight: 2, mastery: "nick", name: "Foice curta", category: "simples", kind: "corpo", damage: "1d4", damageType: "cortante", props: ["leve"], price: "1 po", desc: "Ferramenta de colheita que também serve de arma." },
+  { id: "lanca", weight: 3, mastery: "sap", name: "Lança", category: "simples", kind: "corpo", damage: "1d6", damageType: "perfurante", props: ["arremesso", "versatil"], versatile: "1d8", range: "6/18", price: "1 po", desc: "Haste com ponta de metal. Dá para usar com uma ou duas mãos, ou arremessar." },
+  { id: "maca", weight: 4, mastery: "sap", name: "Maça", category: "simples", kind: "corpo", damage: "1d6", damageType: "concussão", props: [], price: "5 po", desc: "Cabo com uma cabeça pesada de metal. Clássica de clérigos." },
+  { id: "machadinha", weight: 2, mastery: "vex", name: "Machadinha", category: "simples", kind: "corpo", damage: "1d6", damageType: "cortante", props: ["leve", "arremesso"], range: "6/18", price: "5 po", desc: "Machado pequeno de uma mão, bom para arremessar." },
+  { id: "martelo-leve", weight: 2, mastery: "nick", name: "Martelo leve", category: "simples", kind: "corpo", damage: "1d4", damageType: "concussão", props: ["leve", "arremesso"], range: "6/18", price: "2 po", desc: "Martelo pequeno, equilibrado para arremesso." },
   // Simples à distância
-  { id: "arco-curto", weight: 2, name: "Arco curto", category: "simples", kind: "distancia", damage: "1d6", damageType: "perfurante", props: ["municao", "duas_maos"], range: "24/96", price: "25 po", desc: "Arco pequeno e prático. Precisa de flechas." },
-  { id: "besta-leve", weight: 5, name: "Besta leve", category: "simples", kind: "distancia", damage: "1d8", damageType: "perfurante", props: ["municao", "recarga", "duas_maos"], range: "24/96", price: "25 po", desc: "Dispara virotes com força. Fácil de usar, mas demora para recarregar." },
-  { id: "dardo", weight: 0.25, name: "Dardo", category: "simples", kind: "distancia", damage: "1d4", damageType: "perfurante", props: ["acuidade", "arremesso"], range: "6/18", price: "5 pc", desc: "Pequena ponta para arremessar. Magos costumam levar alguns." },
-  { id: "funda", weight: 0, name: "Funda", category: "simples", kind: "distancia", damage: "1d4", damageType: "concussão", props: ["municao"], range: "9/36", price: "1 pp", desc: "Tira de couro que lança pedras ou balas de metal." },
+  { id: "arco-curto", weight: 2, mastery: "vex", name: "Arco curto", category: "simples", kind: "distancia", damage: "1d6", damageType: "perfurante", props: ["municao", "duas_maos"], range: "24/96", price: "25 po", desc: "Arco pequeno e prático. Precisa de flechas." },
+  { id: "besta-leve", weight: 5, mastery: "slow", name: "Besta leve", category: "simples", kind: "distancia", damage: "1d8", damageType: "perfurante", props: ["municao", "recarga", "duas_maos"], range: "24/96", price: "25 po", desc: "Dispara virotes com força. Fácil de usar, mas demora para recarregar." },
+  { id: "dardo", weight: 0.25, mastery: "vex", name: "Dardo", category: "simples", kind: "distancia", damage: "1d4", damageType: "perfurante", props: ["acuidade", "arremesso"], range: "6/18", price: "5 pc", desc: "Pequena ponta para arremessar. Magos costumam levar alguns." },
+  { id: "funda", weight: 0, mastery: "slow", name: "Funda", category: "simples", kind: "distancia", damage: "1d4", damageType: "concussão", props: ["municao"], range: "9/36", price: "1 pp", desc: "Tira de couro que lança pedras ou balas de metal." },
   // Marciais corpo a corpo
-  { id: "alabarda", weight: 6, name: "Alabarda", category: "marcial", kind: "corpo", damage: "1d10", damageType: "cortante", props: ["pesada", "alcance", "duas_maos"], price: "20 po", desc: "Machado na ponta de uma haste longa: acerta inimigos a 3 m." },
-  { id: "chicote", weight: 3, name: "Chicote", category: "marcial", kind: "corpo", damage: "1d4", damageType: "cortante", props: ["acuidade", "alcance"], price: "2 po", desc: "Pouco dano, mas alcança a 3 m." },
-  { id: "cimitarra", weight: 3, name: "Cimitarra", category: "marcial", kind: "corpo", damage: "1d6", damageType: "cortante", props: ["acuidade", "leve"], price: "25 po", desc: "Espada curva e ágil. Druidas também sabem usar." },
-  { id: "espada-curta", weight: 2, name: "Espada curta", category: "marcial", kind: "corpo", damage: "1d6", damageType: "perfurante", props: ["acuidade", "leve"], price: "10 po", desc: "Lâmina ágil, ótima para lutar com uma em cada mão." },
-  { id: "espada-grande", weight: 6, name: "Espada grande", category: "marcial", kind: "corpo", damage: "2d6", damageType: "cortante", props: ["pesada", "duas_maos"], price: "50 po", desc: "Espadona de duas mãos com dano alto e constante." },
-  { id: "espada-longa", weight: 3, name: "Espada longa", category: "marcial", kind: "corpo", damage: "1d8", damageType: "cortante", props: ["versatil"], versatile: "1d10", price: "15 po", desc: "A espada clássica do cavaleiro. Uma ou duas mãos." },
-  { id: "glaive", weight: 6, name: "Glaive", category: "marcial", kind: "corpo", damage: "1d10", damageType: "cortante", props: ["pesada", "alcance", "duas_maos"], price: "20 po", desc: "Lâmina longa na ponta de uma haste, alcança a 3 m." },
-  { id: "lanca-montaria", weight: 6, name: "Lança de montaria", category: "marcial", kind: "corpo", damage: "1d12", damageType: "perfurante", props: ["alcance", "especial"], price: "10 po", desc: "Lança de cavaleiro para investidas montadas.", special: "Tem desvantagem para atacar alguém a até 1,5 m. Precisa das duas mãos quando você não está montado." },
-  { id: "maca-estrela", weight: 4, name: "Maça estrela", category: "marcial", kind: "corpo", damage: "1d8", damageType: "perfurante", props: [], price: "15 po", desc: "Bola de metal cheia de espinhos num cabo." },
-  { id: "machado-batalha", weight: 4, name: "Machado de batalha", category: "marcial", kind: "corpo", damage: "1d8", damageType: "cortante", props: ["versatil"], versatile: "1d10", price: "10 po", desc: "Machado de guerra. Favorito dos anões." },
-  { id: "machado-grande", weight: 7, name: "Machado grande", category: "marcial", kind: "corpo", damage: "1d12", damageType: "cortante", props: ["pesada", "duas_maos"], price: "30 po", desc: "Machado enorme de duas mãos, o maior dado de dano entre as armas. Clássico de bárbaros." },
-  { id: "malho", weight: 10, name: "Malho", category: "marcial", kind: "corpo", damage: "2d6", damageType: "concussão", props: ["pesada", "duas_maos"], price: "10 po", desc: "Marreta de guerra de duas mãos." },
-  { id: "mangual", weight: 2, name: "Mangual", category: "marcial", kind: "corpo", damage: "1d8", damageType: "concussão", props: [], price: "10 po", desc: "Bola de metal presa ao cabo por uma corrente." },
-  { id: "martelo-guerra", weight: 2, name: "Martelo de guerra", category: "marcial", kind: "corpo", damage: "1d8", damageType: "concussão", props: ["versatil"], versatile: "1d10", price: "15 po", desc: "Martelo pesado de batalha, uma ou duas mãos." },
-  { id: "picareta-guerra", weight: 2, name: "Picareta de guerra", category: "marcial", kind: "corpo", damage: "1d8", damageType: "perfurante", props: [], price: "5 po", desc: "Picareta feita para furar armaduras." },
-  { id: "pique", weight: 18, name: "Pique", category: "marcial", kind: "corpo", damage: "1d10", damageType: "perfurante", props: ["pesada", "alcance", "duas_maos"], price: "5 po", desc: "Lança muito longa, alcança a 3 m." },
-  { id: "rapieira", weight: 2, name: "Rapieira", category: "marcial", kind: "corpo", damage: "1d8", damageType: "perfurante", props: ["acuidade"], price: "25 po", desc: "Espada fina e elegante. A melhor arma de Destreza para uma mão." },
-  { id: "tridente", weight: 4, name: "Tridente", category: "marcial", kind: "corpo", damage: "1d6", damageType: "perfurante", props: ["arremesso", "versatil"], versatile: "1d8", range: "6/18", price: "5 po", desc: "Lança de três pontas." },
+  { id: "alabarda", weight: 6, mastery: "cleave", name: "Alabarda", category: "marcial", kind: "corpo", damage: "1d10", damageType: "cortante", props: ["pesada", "alcance", "duas_maos"], price: "20 po", desc: "Machado na ponta de uma haste longa: acerta inimigos a 3 m." },
+  { id: "chicote", weight: 3, mastery: "slow", name: "Chicote", category: "marcial", kind: "corpo", damage: "1d4", damageType: "cortante", props: ["acuidade", "alcance"], price: "2 po", desc: "Pouco dano, mas alcança a 3 m." },
+  { id: "cimitarra", weight: 3, mastery: "nick", name: "Cimitarra", category: "marcial", kind: "corpo", damage: "1d6", damageType: "cortante", props: ["acuidade", "leve"], price: "25 po", desc: "Espada curva e ágil. Druidas também sabem usar." },
+  { id: "espada-curta", weight: 2, mastery: "vex", name: "Espada curta", category: "marcial", kind: "corpo", damage: "1d6", damageType: "perfurante", props: ["acuidade", "leve"], price: "10 po", desc: "Lâmina ágil, ótima para lutar com uma em cada mão." },
+  { id: "espada-grande", weight: 6, mastery: "graze", name: "Espada grande", category: "marcial", kind: "corpo", damage: "2d6", damageType: "cortante", props: ["pesada", "duas_maos"], price: "50 po", desc: "Espadona de duas mãos com dano alto e constante." },
+  { id: "espada-longa", weight: 3, mastery: "sap", name: "Espada longa", category: "marcial", kind: "corpo", damage: "1d8", damageType: "cortante", props: ["versatil"], versatile: "1d10", price: "15 po", desc: "A espada clássica do cavaleiro. Uma ou duas mãos." },
+  { id: "glaive", weight: 6, mastery: "graze", name: "Glaive", category: "marcial", kind: "corpo", damage: "1d10", damageType: "cortante", props: ["pesada", "alcance", "duas_maos"], price: "20 po", desc: "Lâmina longa na ponta de uma haste, alcança a 3 m." },
+  { id: "lanca-montaria", weight: 6, mastery: "topple", name: "Lança de montaria", category: "marcial", kind: "corpo", damage: "1d12", damageType: "perfurante", props: ["alcance", "especial"], price: "10 po", desc: "Lança de cavaleiro para investidas montadas.", special: "Tem desvantagem para atacar alguém a até 1,5 m. Precisa das duas mãos quando você não está montado." },
+  { id: "maca-estrela", weight: 4, mastery: "sap", name: "Maça estrela", category: "marcial", kind: "corpo", damage: "1d8", damageType: "perfurante", props: [], price: "15 po", desc: "Bola de metal cheia de espinhos num cabo." },
+  { id: "machado-batalha", weight: 4, mastery: "topple", name: "Machado de batalha", category: "marcial", kind: "corpo", damage: "1d8", damageType: "cortante", props: ["versatil"], versatile: "1d10", price: "10 po", desc: "Machado de guerra. Favorito dos anões." },
+  { id: "machado-grande", weight: 7, mastery: "cleave", name: "Machado grande", category: "marcial", kind: "corpo", damage: "1d12", damageType: "cortante", props: ["pesada", "duas_maos"], price: "30 po", desc: "Machado enorme de duas mãos, o maior dado de dano entre as armas. Clássico de bárbaros." },
+  { id: "malho", weight: 10, mastery: "topple", name: "Malho", category: "marcial", kind: "corpo", damage: "2d6", damageType: "concussão", props: ["pesada", "duas_maos"], price: "10 po", desc: "Marreta de guerra de duas mãos." },
+  { id: "mangual", weight: 2, mastery: "sap", name: "Mangual", category: "marcial", kind: "corpo", damage: "1d8", damageType: "concussão", props: [], price: "10 po", desc: "Bola de metal presa ao cabo por uma corrente." },
+  { id: "martelo-guerra", weight: 2, mastery: "push", name: "Martelo de guerra", category: "marcial", kind: "corpo", damage: "1d8", damageType: "concussão", props: ["versatil"], versatile: "1d10", price: "15 po", desc: "Martelo pesado de batalha, uma ou duas mãos." },
+  { id: "picareta-guerra", weight: 2, mastery: "sap", name: "Picareta de guerra", category: "marcial", kind: "corpo", damage: "1d8", damageType: "perfurante", props: [], price: "5 po", desc: "Picareta feita para furar armaduras." },
+  { id: "pique", weight: 18, mastery: "push", name: "Pique", category: "marcial", kind: "corpo", damage: "1d10", damageType: "perfurante", props: ["pesada", "alcance", "duas_maos"], price: "5 po", desc: "Lança muito longa, alcança a 3 m." },
+  { id: "rapieira", weight: 2, mastery: "vex", name: "Rapieira", category: "marcial", kind: "corpo", damage: "1d8", damageType: "perfurante", props: ["acuidade"], price: "25 po", desc: "Espada fina e elegante. A melhor arma de Destreza para uma mão." },
+  { id: "tridente", weight: 4, mastery: "topple", name: "Tridente", category: "marcial", kind: "corpo", damage: "1d6", damageType: "perfurante", props: ["arremesso", "versatil"], versatile: "1d8", range: "6/18", price: "5 po", desc: "Lança de três pontas." },
   // Marciais à distância
-  { id: "arco-longo", weight: 2, name: "Arco longo", category: "marcial", kind: "distancia", damage: "1d8", damageType: "perfurante", props: ["municao", "pesada", "duas_maos"], range: "45/180", price: "50 po", desc: "Arco grande com o maior alcance do jogo. Clássico de patrulheiros." },
-  { id: "besta-mao", weight: 3, name: "Besta de mão", category: "marcial", kind: "distancia", damage: "1d6", damageType: "perfurante", props: ["municao", "leve", "recarga"], range: "9/36", price: "75 po", desc: "Besta pequena, usada com uma mão." },
-  { id: "besta-pesada", weight: 18, name: "Besta pesada", category: "marcial", kind: "distancia", damage: "1d10", damageType: "perfurante", props: ["municao", "pesada", "recarga", "duas_maos"], range: "30/120", price: "50 po", desc: "Besta grande e potente." },
+  { id: "arco-longo", weight: 2, mastery: "slow", name: "Arco longo", category: "marcial", kind: "distancia", damage: "1d8", damageType: "perfurante", props: ["municao", "pesada", "duas_maos"], range: "45/180", price: "50 po", desc: "Arco grande com o maior alcance do jogo. Clássico de patrulheiros." },
+  { id: "besta-mao", weight: 3, mastery: "vex", name: "Besta de mão", category: "marcial", kind: "distancia", damage: "1d6", damageType: "perfurante", props: ["municao", "leve", "recarga"], range: "9/36", price: "75 po", desc: "Besta pequena, usada com uma mão." },
+  { id: "besta-pesada", weight: 18, mastery: "push", name: "Besta pesada", category: "marcial", kind: "distancia", damage: "1d10", damageType: "perfurante", props: ["municao", "pesada", "recarga", "duas_maos"], range: "30/120", price: "50 po", desc: "Besta grande e potente." },
   { id: "rede", weight: 3, name: "Rede", category: "marcial", kind: "distancia", damage: "—", damageType: null, props: ["arremesso", "especial"], range: "1,5/4,5", price: "1 po", desc: "Não causa dano: prende o alvo.", special: "Um acerto deixa a criatura (Grande ou menor) impedida até se soltar: teste de Força CD 10 ou 5 de dano cortante na rede." },
-  { id: "zarabatana", weight: 1, name: "Zarabatana", category: "marcial", kind: "distancia", damage: "1", damageType: "perfurante", props: ["municao", "recarga"], range: "7,5/30", price: "10 po", desc: "Tubo que sopra agulhas. Dano mínimo; útil com venenos." },
+  { id: "zarabatana", weight: 1, mastery: "vex", name: "Zarabatana", category: "marcial", kind: "distancia", damage: "1", damageType: "perfurante", props: ["municao", "recarga"], range: "7,5/30", price: "10 po", desc: "Tubo que sopra agulhas. Dano mínimo; útil com venenos." },
 ];
 
 export const findWeapon = (id?: string | null) => WEAPONS.find((w) => w.id === id);
@@ -270,6 +303,7 @@ export function armorProficient(cat: ArmorProf, cls?: ClassDef, sub?: SubraceDef
 }
 
 export function weaponProficient(w: WeaponDef, cls?: ClassDef, race?: RaceDef, sub?: SubraceDef) {
+  if (w.id === "desarmado") return true; // Ataque desarmado: qualquer criatura é "treinada"
   const c = cls ? CLASS_WEAPONS[cls.name] : undefined;
   if (c && (c.categories.includes(w.category) || c.extra.includes(w.id))) return true;
   return [race?.name, sub?.name].some((n) => n && RACE_WEAPONS[n]?.includes(w.id));
@@ -373,4 +407,9 @@ export function equipmentWeights(eq: Equipment) {
   const focus = findFocus(eq.focus);
   if (focus) list.push({ name: focus.name, weight: focus.weight });
   return list;
+}
+
+/** CD (2024) para o alvo resistir a Agarrar ou Empurrar: 8 + proficiência + o maior entre Força e Destreza. */
+export function maneuverDc(prof: number, mods: Abilities) {
+  return 8 + prof + Math.max(mods.str, mods.dex);
 }

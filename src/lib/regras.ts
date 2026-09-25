@@ -1,6 +1,15 @@
 /**
- * Regras do D&D 5ª edição (Livro do Jogador) usadas na ficha para iniciantes.
- * Nomes seguem a tradução oficial brasileira.
+ * Regras do D&D 5ª edição usadas na ficha para iniciantes.
+ * Base: SRD 5.1 (2014). Atualizado com as mudanças da revisão 2024 (D&D 5.5) do
+ * SRD 5.2 — ambos da Wizards of the Coast LLC, sob licença Creative Commons
+ * Attribution 4.0 (CC-BY-4.0): https://creativecommons.org/licenses/by/4.0/legalcode
+ *
+ * Mudanças de 2024 aplicadas aqui:
+ * - Antecedentes (BACKGROUNDS) seguem o novo formato: 3 atributos, 2 perícias,
+ *   1 ferramenta e um Talento de Origem — e são agora a única fonte de bônus
+ *   de atributo (o bônus de raça de 2014 foi zerado por isso; os demais traços
+ *   de raça, como deslocamento e visão no escuro, continuam no padrão 2014).
+ * - Nomes seguem a tradução oficial brasileira quando existente.
  */
 import type { Abilities, AbilityKey, SkillKey } from "./types";
 
@@ -39,6 +48,7 @@ export const skillByKey = (k: SkillKey) => SKILLS.find((s) => s.key === k)!;
 
 export type SubraceDef = {
   name: string;
+  /** Zerado: em 2024 o bônus de atributo vem do antecedente, não da raça. */
   bonus: Bonus;
   speed?: number;
   hpPerLevel?: number;
@@ -48,6 +58,7 @@ export type SubraceDef = {
 
 export type RaceDef = {
   name: string;
+  /** Zerado: em 2024 o bônus de atributo vem do antecedente, não da raça. */
   bonus: Bonus;
   /** Deslocamento em metros */
   speed: number;
@@ -64,14 +75,14 @@ export type RaceDef = {
 export const RACES: RaceDef[] = [
   {
     name: "Humano",
-    bonus: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 },
+    bonus: {},
     speed: 9,
     desc: "Versáteis e ambiciosos, os humanos se dão bem em qualquer classe. Boa escolha para o primeiro personagem.",
-    traits: ["+1 em todos os atributos", "Fala o Comum e mais um idioma à escolha"],
+    traits: ["Fala o Comum e mais um idioma à escolha", "Versátil: aprende uma perícia à escolha"],
   },
   {
     name: "Anão",
-    bonus: { con: 2 },
+    bonus: {},
     speed: 7.5,
     desc: "Robustos, teimosos e resistentes, forjados nas montanhas. Aguentam muito castigo.",
     traits: [
@@ -80,13 +91,13 @@ export const RACES: RaceDef[] = [
       "Armadura pesada não reduz seu deslocamento",
     ],
     subraces: [
-      { name: "Anão da Colina", bonus: { wis: 1 }, hpPerLevel: 1, desc: "Sábio e ainda mais resistente.", traits: ["Tenacidade anã: +1 PV máximo a cada nível"] },
-      { name: "Anão da Montanha", bonus: { str: 2 }, desc: "Forte e acostumado ao combate.", traits: ["Sabe usar armaduras leves e médias"] },
+      { name: "Anão da Colina", bonus: {}, hpPerLevel: 1, desc: "Sábio e ainda mais resistente.", traits: ["Tenacidade anã: +1 PV máximo a cada nível"] },
+      { name: "Anão da Montanha", bonus: {}, desc: "Forte e acostumado ao combate.", traits: ["Sabe usar armaduras leves e médias"] },
     ],
   },
   {
     name: "Elfo",
-    bonus: { dex: 2 },
+    bonus: {},
     speed: 9,
     skills: ["percepcao"],
     desc: "Graciosos, de vida longa e ligados à magia e à natureza.",
@@ -97,14 +108,14 @@ export const RACES: RaceDef[] = [
       "Transe: medita 4 horas em vez de dormir 8",
     ],
     subraces: [
-      { name: "Alto Elfo", bonus: { int: 1 }, desc: "Estudioso e mágico.", traits: ["Conhece um truque de mago", "Um idioma extra"] },
-      { name: "Elfo da Floresta", bonus: { wis: 1 }, speed: 10.5, desc: "Rápido e furtivo nas matas.", traits: ["Pés ligeiros: deslocamento de 10,5 m", "Máscara da natureza: se esconde em chuva, neblina ou folhagem"] },
-      { name: "Elfo Negro (Drow)", bonus: { cha: 1 }, desc: "Vem das profundezas do subterrâneo.", traits: ["Visão no escuro superior (36 m)", "Sensibilidade à luz do sol", "Magia drow: conhece o truque Globos de Luz"] },
+      { name: "Alto Elfo", bonus: {}, desc: "Estudioso e mágico.", traits: ["Conhece um truque de mago", "Um idioma extra"] },
+      { name: "Elfo da Floresta", bonus: {}, speed: 10.5, desc: "Rápido e furtivo nas matas.", traits: ["Pés ligeiros: deslocamento de 10,5 m", "Máscara da natureza: se esconde em chuva, neblina ou folhagem"] },
+      { name: "Elfo Negro (Drow)", bonus: {}, desc: "Vem das profundezas do subterrâneo.", traits: ["Visão no escuro superior (36 m)", "Sensibilidade à luz do sol", "Magia drow: conhece o truque Globos de Luz"] },
     ],
   },
   {
     name: "Halfling",
-    bonus: { dex: 2 },
+    bonus: {},
     speed: 7.5,
     desc: "Pequenos, alegres e surpreendentemente corajosos. A sorte parece estar sempre do lado deles.",
     traits: [
@@ -113,13 +124,13 @@ export const RACES: RaceDef[] = [
       "Agilidade halfling: passa pelo espaço de criaturas maiores",
     ],
     subraces: [
-      { name: "Pés Leves", bonus: { cha: 1 }, desc: "Simpático e bom em passar despercebido.", traits: ["Pode se esconder atrás de uma criatura maior"] },
-      { name: "Robusto", bonus: { con: 1 }, desc: "Resistente como um anão.", traits: ["Vantagem contra veneno e resistência a dano de veneno"] },
+      { name: "Pés Leves", bonus: {}, desc: "Simpático e bom em passar despercebido.", traits: ["Pode se esconder atrás de uma criatura maior"] },
+      { name: "Robusto", bonus: {}, desc: "Resistente como um anão.", traits: ["Vantagem contra veneno e resistência a dano de veneno"] },
     ],
   },
   {
     name: "Draconato",
-    bonus: { str: 2, cha: 1 },
+    bonus: {},
     speed: 9,
     desc: "Descendentes de dragões (também chamados de Dracónion). Orgulhosos, altos e imponentes.",
     traits: [
@@ -130,24 +141,22 @@ export const RACES: RaceDef[] = [
   },
   {
     name: "Gnomo",
-    bonus: { int: 2 },
+    bonus: {},
     speed: 7.5,
     desc: "Pequenos, curiosos e inventivos, sempre com uma ideia nova.",
     traits: ["Visão no escuro (18 m)", "Esperteza gnômica: vantagem em resistências de Inteligência, Sabedoria e Carisma contra magia"],
     subraces: [
-      { name: "Gnomo da Floresta", bonus: { dex: 1 }, desc: "Ilusionista nato e amigo dos bichos.", traits: ["Conhece o truque Ilusão Menor", "Fala com pequenos animais"] },
-      { name: "Gnomo das Rochas", bonus: { con: 1 }, desc: "Engenhoso inventor.", traits: ["Conhecimento de artífice", "Monta pequenas engenhocas"] },
+      { name: "Gnomo da Floresta", bonus: {}, desc: "Ilusionista nato e amigo dos bichos.", traits: ["Conhece o truque Ilusão Menor", "Fala com pequenos animais"] },
+      { name: "Gnomo das Rochas", bonus: {}, desc: "Engenhoso inventor.", traits: ["Conhecimento de artífice", "Monta pequenas engenhocas"] },
     ],
   },
   {
     name: "Meio-Elfo",
-    bonus: { cha: 2 },
-    chooseBonus: 2,
+    bonus: {},
     chooseSkills: 2,
     speed: 9,
     desc: "Filhos de dois mundos, carismáticos e adaptáveis. Combinam com quase tudo.",
     traits: [
-      "+1 em dois atributos à sua escolha (além de +2 em Carisma)",
       "Duas perícias extras à sua escolha",
       "Visão no escuro (18 m)",
       "Ancestral feérico: vantagem contra ser enfeitiçado",
@@ -155,7 +164,7 @@ export const RACES: RaceDef[] = [
   },
   {
     name: "Meio-Orc",
-    bonus: { str: 2, con: 1 },
+    bonus: {},
     speed: 9,
     skills: ["intimidacao"],
     desc: "Fortes e ferozes, com o sangue quente dos orcs. Guerreiros natos.",
@@ -168,7 +177,7 @@ export const RACES: RaceDef[] = [
   },
   {
     name: "Tiefling",
-    bonus: { cha: 2, int: 1 },
+    bonus: {},
     speed: 9,
     desc: "Marcados por uma herança infernal: chifres, cauda e olhos marcantes. Muitas vezes olhados com desconfiança.",
     traits: ["Visão no escuro (18 m)", "Resistência infernal: resistência a dano de fogo", "Legado infernal: conhece o truque Taumaturgia"],
@@ -269,25 +278,37 @@ export const CLASSES: ClassDef[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Antecedentes
+// Antecedentes (formato 2024: 3 atributos, 2 perícias, 1 ferramenta, 1 Talento de Origem)
 // ---------------------------------------------------------------------------
 
-export type BackgroundDef = { name: string; skills: SkillKey[]; desc: string };
+export type BackgroundDef = {
+  name: string;
+  /** As 3 habilidades entre as quais o jogador distribui +2/+1 ou +1/+1/+1 */
+  abilities: AbilityKey[];
+  skills: SkillKey[];
+  tool: string;
+  /** Nome do Talento de Origem concedido automaticamente no 1º nível */
+  feat: string;
+  desc: string;
+};
 
 export const BACKGROUNDS: BackgroundDef[] = [
-  { name: "Acólito", skills: ["intuicao", "religiao"], desc: "Cresceu servindo num templo, entre rituais e orações." },
-  { name: "Artesão de Guilda", skills: ["intuicao", "persuasao"], desc: "Aprendeu um ofício (ferreiro, carpinteiro, alquimista…) e faz parte de uma guilda." },
-  { name: "Artista", skills: ["acrobacia", "atuacao"], desc: "Vive de se apresentar: música, dança, teatro ou acrobacias." },
-  { name: "Charlatão", skills: ["enganacao", "prestidigitacao"], desc: "Sempre teve lábia para enganar os outros e sumir antes de ser pego." },
-  { name: "Criminoso", skills: ["enganacao", "furtividade"], desc: "Tem um passado no crime e contatos no submundo." },
-  { name: "Eremita", skills: ["medicina", "religiao"], desc: "Viveu isolado por muito tempo e descobriu algo importante." },
-  { name: "Forasteiro", skills: ["atletismo", "sobrevivencia"], desc: "Cresceu longe da civilização, nas florestas, montanhas ou desertos." },
-  { name: "Herói do Povo", skills: ["adestrar", "sobrevivencia"], desc: "Gente simples que defendeu sua vila e virou um pequeno herói local." },
-  { name: "Marinheiro", skills: ["atletismo", "percepcao"], desc: "Passou anos em navios, enfrentando tempestades e piratas." },
-  { name: "Nobre", skills: ["historia", "persuasao"], desc: "Nasceu numa família rica e poderosa, com título e privilégios." },
-  { name: "Órfão", skills: ["furtividade", "prestidigitacao"], desc: "Cresceu sozinho nas ruas e aprendeu a se virar." },
-  { name: "Sábio", skills: ["arcanismo", "historia"], desc: "Passou anos estudando em bibliotecas e academias." },
-  { name: "Soldado", skills: ["atletismo", "intimidacao"], desc: "Serviu num exército ou milícia e conhece a disciplina da guerra." },
+  { name: "Acólito", abilities: ["int", "wis", "cha"], skills: ["intuicao", "religiao"], tool: "Suprimentos de caligrafia", feat: "Iniciado em Magia (Clérigo)", desc: "Cresceu servindo num templo, entre rituais e orações." },
+  { name: "Artesão", abilities: ["str", "dex", "int"], skills: ["investigacao", "persuasao"], tool: "Uma ferramenta de artesão à escolha", feat: "Artesão", desc: "Aprendeu um ofício manual — ferreiro, carpinteiro, alfaiate — antes de virar aventureiro." },
+  { name: "Charlatão", abilities: ["dex", "con", "cha"], skills: ["enganacao", "prestidigitacao"], tool: "Kit de falsificação", feat: "Habilidoso", desc: "Sempre teve lábia para enganar os outros e sumir antes de ser pego." },
+  { name: "Criminoso", abilities: ["dex", "con", "int"], skills: ["prestidigitacao", "furtividade"], tool: "Ferramentas de ladrão", feat: "Alerta", desc: "Tem um passado no crime e contatos no submundo." },
+  { name: "Artista", abilities: ["str", "dex", "cha"], skills: ["acrobacia", "atuacao"], tool: "Kit de disfarce", feat: "Músico", desc: "Vive de se apresentar: música, dança, teatro ou acrobacias." },
+  { name: "Fazendeiro", abilities: ["str", "con", "wis"], skills: ["adestrar", "natureza"], tool: "Ferramentas de carpinteiro", feat: "Robusto", desc: "Cresceu trabalhando na terra, cuidando de plantações e animais." },
+  { name: "Guarda", abilities: ["str", "int", "wis"], skills: ["atletismo", "percepcao"], tool: "Um jogo à escolha", feat: "Alerta", desc: "Vigiava um portão, um muro ou uma caravana, sempre atento a problemas." },
+  { name: "Guia", abilities: ["dex", "con", "wis"], skills: ["furtividade", "sobrevivencia"], tool: "Ferramentas de cartógrafo", feat: "Iniciado em Magia (Druida)", desc: "Conhece os caminhos dos ermos como poucos, e leva viajantes em segurança." },
+  { name: "Eremita", abilities: ["con", "wis", "cha"], skills: ["medicina", "religiao"], tool: "Kit de herbalismo", feat: "Curandeiro", desc: "Viveu isolado por muito tempo e descobriu algo importante." },
+  { name: "Mercador", abilities: ["con", "int", "cha"], skills: ["adestrar", "persuasao"], tool: "Ferramentas de navegador", feat: "Sortudo", desc: "Viajou por rotas comerciais negociando mercadorias de todo tipo." },
+  { name: "Nobre", abilities: ["str", "int", "cha"], skills: ["historia", "persuasao"], tool: "Um jogo à escolha", feat: "Habilidoso", desc: "Nasceu numa família rica e poderosa, com título e privilégios." },
+  { name: "Sábio", abilities: ["con", "int", "wis"], skills: ["arcanismo", "historia"], tool: "Suprimentos de caligrafia", feat: "Iniciado em Magia (Mago)", desc: "Passou anos estudando em bibliotecas e academias." },
+  { name: "Marinheiro", abilities: ["str", "dex", "wis"], skills: ["acrobacia", "percepcao"], tool: "Ferramentas de navegador", feat: "Brigão de Taverna", desc: "Passou anos em navios, enfrentando tempestades e brigas de porto." },
+  { name: "Escriba", abilities: ["dex", "int", "wis"], skills: ["investigacao", "percepcao"], tool: "Suprimentos de caligrafia", feat: "Habilidoso", desc: "Copiava e catalogava textos importantes, com olho fino para detalhes." },
+  { name: "Soldado", abilities: ["str", "dex", "con"], skills: ["atletismo", "intimidacao"], tool: "Um jogo à escolha", feat: "Atacante Selvagem", desc: "Serviu num exército ou milícia e conhece a disciplina da guerra." },
+  { name: "Forasteiro", abilities: ["dex", "wis", "cha"], skills: ["intuicao", "furtividade"], tool: "Ferramentas de ladrão", feat: "Sortudo", desc: "Cresceu sozinho, longe de casa, e aprendeu a se virar por conta própria." },
 ];
 
 // ---------------------------------------------------------------------------
@@ -308,6 +329,26 @@ export function racialBonus(race: RaceDef | undefined, sub: SubraceDef | undefin
   add(race?.bonus);
   add(sub?.bonus);
   if (race?.chooseBonus) for (const k of choices.slice(0, race.chooseBonus)) add({ [k]: 1 });
+  return total;
+}
+
+export type BackgroundAbilityMode = "even" | "focus";
+export type BackgroundFocus = { plus2: AbilityKey | null; plus1: AbilityKey | null };
+
+/**
+ * Bônus de atributo do antecedente (regra 2024): +1 nos três atributos listados,
+ * ou +2 em um deles e +1 em outro, à escolha do jogador. "even" é o padrão seguro
+ * (não exige nenhuma escolha extra).
+ */
+export function backgroundBonus(bg: BackgroundDef | undefined, mode: BackgroundAbilityMode, focus: BackgroundFocus): Bonus {
+  if (!bg) return {};
+  const total: Bonus = {};
+  if (mode === "focus" && focus.plus2 && focus.plus1 && focus.plus2 !== focus.plus1 && bg.abilities.includes(focus.plus2) && bg.abilities.includes(focus.plus1)) {
+    total[focus.plus2] = 2;
+    total[focus.plus1] = 1;
+  } else {
+    for (const k of bg.abilities) total[k] = 1;
+  }
   return total;
 }
 

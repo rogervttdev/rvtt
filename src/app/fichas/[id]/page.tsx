@@ -41,6 +41,7 @@ import {
   formatMeters,
   grantedSkills,
   racialBonus,
+  backgroundBonus,
   speedFor,
   standardArrayFor,
   suggestedHp,
@@ -108,7 +109,9 @@ function CharacterEditor() {
     const sub = race?.subraces?.find((s) => s.name === d.subrace);
     const cls = findClass(char.class);
     const bg = findBackground(d.background);
-    const bonus = racialBonus(race, sub, d.bonusChoices);
+    const bonus = { ...racialBonus(race, sub, d.bonusChoices) };
+    const bgBonus = backgroundBonus(bg, d.backgroundAbilityMode, d.backgroundFocus);
+    for (const [k, v] of Object.entries(bgBonus)) bonus[k as AbilityKey] = (bonus[k as AbilityKey] ?? 0) + (v ?? 0);
     const scores = {} as Abilities;
     const mods = {} as Abilities;
     for (const { key } of ABILITIES) {
@@ -475,9 +478,7 @@ function CharacterEditor() {
               <div className="mt-3 space-y-2 text-sm">
                 <p className="leading-relaxed">{race.desc}</p>
                 <p>
-                  <strong>Bônus:</strong> {bonusText(race.bonus)}
-                  {race.chooseBonus ? `, +1 em ${race.chooseBonus} à escolha` : ""} · <strong>Deslocamento:</strong>{" "}
-                  {formatMeters(speedFor(race, sub))}
+                  <strong>Deslocamento:</strong> {formatMeters(speedFor(race, sub))}
                 </p>
                 <ul className="list-disc space-y-0.5 pl-5 text-dim">
                   {race.traits.map((t) => (
@@ -498,7 +499,7 @@ function CharacterEditor() {
                 <select id="subraca" className="field mt-1" value={d.subrace} onChange={(e) => patchDetails({ subrace: e.target.value })}>
                   {race.subraces.map((s) => (
                     <option key={s.name} value={s.name}>
-                      {s.name} ({bonusText(s.bonus)})
+                      {s.name}
                     </option>
                   ))}
                 </select>
@@ -593,7 +594,20 @@ function CharacterEditor() {
                   </label>
                   <Help title="Antecedente" paragraphs={GLOSSARIO.antecedente} />
                 </div>
-                <select id="antecedente" className="field mt-1 px-2 text-[0.95rem]" value={d.background} onChange={(e) => patchDetails({ background: e.target.value })}>
+                <select
+                  id="antecedente"
+                  className="field mt-1 px-2 text-[0.95rem]"
+                  value={d.background}
+                  onChange={(e) => {
+                    const oldBg = findBackground(d.background);
+                    const newBg = findBackground(e.target.value);
+                    let feats = char.feats;
+                    if (oldBg) feats = feats.filter((f) => f !== oldBg.feat);
+                    if (newBg && !feats.includes(newBg.feat)) feats = [...feats, newBg.feat];
+                    patch({ feats });
+                    patchDetails({ background: e.target.value, backgroundAbilityMode: "even", backgroundFocus: { plus2: null, plus1: null } });
+                  }}
+                >
                   <option value="">Escolha…</option>
                   {BACKGROUNDS.map((b) => (
                     <option key={b.name} value={b.name}>
@@ -634,6 +648,82 @@ function CharacterEditor() {
                 <p>
                   <strong>Perícias treinadas:</strong> {bg.skills.map((s) => SKILLS.find((x) => x.key === s)!.label).join(" e ")}
                 </p>
+                <p>
+                  <strong>Ferramenta:</strong> {bg.tool}
+                </p>
+                <p className="flex flex-wrap items-center gap-1.5">
+                  <strong>Talento de Origem:</strong> {bg.feat}
+                  <span className="chip">grátis no 1º nível</span>
+                  <Help
+                    title="Talento de Origem"
+                    paragraphs={[
+                      "Regra 2024: todo antecedente já vem com um talento pronto, ganho de graça no 1º nível — sem gastar o Aumento no Valor de Habilidade.",
+                      "A ficha adiciona esse talento sozinha à aba Progressão → Talentos quando você escolhe o antecedente, e o troca se você mudar de antecedente depois.",
+                    ]}
+                  />
+                </p>
+
+                <div className="border-t border-rule pt-2">
+                  <p className="flex items-center gap-1.5 font-semibold">
+                    Bônus de atributo
+                    <Help
+                      title="Bônus de atributo do antecedente"
+                      paragraphs={[
+                        "Regra 2024: o bônus de atributo vem do antecedente, não mais da raça. Distribua +1 nos três atributos do antecedente, ou +2 em um deles e +1 em outro.",
+                      ]}
+                    />
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-3">
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        name="bg-ability-mode"
+                        checked={d.backgroundAbilityMode === "even"}
+                        onChange={() => patchDetails({ backgroundAbilityMode: "even" })}
+                      />
+                      +1 nos três ({bg.abilities.map((a) => ABILITY_LABEL[a]).join(", ")})
+                    </label>
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        name="bg-ability-mode"
+                        checked={d.backgroundAbilityMode === "focus"}
+                        onChange={() => patchDetails({ backgroundAbilityMode: "focus" })}
+                      />
+                      +2 em um, +1 em outro
+                    </label>
+                  </div>
+                  {d.backgroundAbilityMode === "focus" && (
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <select
+                        className="field px-2 py-1 text-sm"
+                        aria-label="Atributo que recebe +2"
+                        value={d.backgroundFocus.plus2 ?? ""}
+                        onChange={(e) => patchDetails({ backgroundFocus: { ...d.backgroundFocus, plus2: (e.target.value || null) as AbilityKey | null } })}
+                      >
+                        <option value="">+2 em…</option>
+                        {bg.abilities.map((a) => (
+                          <option key={a} value={a} disabled={a === d.backgroundFocus.plus1}>
+                            {ABILITY_LABEL[a]}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        className="field px-2 py-1 text-sm"
+                        aria-label="Atributo que recebe +1"
+                        value={d.backgroundFocus.plus1 ?? ""}
+                        onChange={(e) => patchDetails({ backgroundFocus: { ...d.backgroundFocus, plus1: (e.target.value || null) as AbilityKey | null } })}
+                      >
+                        <option value="">+1 em…</option>
+                        {bg.abilities.map((a) => (
+                          <option key={a} value={a} disabled={a === d.backgroundFocus.plus2}>
+                            {ABILITY_LABEL[a]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {alignment && (
@@ -681,7 +771,7 @@ function CharacterEditor() {
                     <p>{ABILITY_ABOUT[key]}</p>
                     <HelpCalc>
                       Base {char.abilities[key]}
-                      {b ? ` + ${b} da raça` : ""} = {scores[key]}. Modificador: ({scores[key]} − 10) ÷ 2
+                      {b ? ` + ${b} do antecedente` : ""} = {scores[key]}. Modificador: ({scores[key]} − 10) ÷ 2
                       {scores[key] % 2 !== 0 ? ", arredondando para baixo," : ""} = {formatMod(mods[key])}
                     </HelpCalc>
                   </Help>
@@ -709,7 +799,7 @@ function CharacterEditor() {
                     }
                     aria-label={`Valor base de ${label}`}
                   />
-                  {b !== 0 && <span className="chip">+{b} raça</span>}
+                  {b !== 0 && <span className="chip">+{b} antecedente</span>}
                 </div>
                 <span className="mt-2 text-xs leading-snug text-dim">{hint}</span>
               </div>
@@ -717,8 +807,8 @@ function CharacterEditor() {
           })}
         </div>
         <p className="mt-2 flex items-center gap-1.5 text-sm text-dim">
-          O número grande é o valor total; o selo embaixo é o modificador (toque para rolar). A caixinha é o valor base, e o bônus da raça é somado sozinho.
-          <Help title="Valor base e bônus da raça" paragraphs={GLOSSARIO.base_racial} />
+          O número grande é o valor total; o selo embaixo é o modificador (toque para rolar). A caixinha é o valor base, e o bônus do antecedente é somado sozinho.
+          <Help title="Valor base e bônus do antecedente" paragraphs={GLOSSARIO.base_racial} />
         </p>
       </section>
 
@@ -847,13 +937,13 @@ function CharacterEditor() {
             <span className="font-display text-4xl font-bold">{derived.passive}</span>
           </StatBox>
 
-          <StatBox label="Inspiração" help={<Help title="Inspiração" paragraphs={GLOSSARIO.inspiracao} />}>
+          <StatBox label="Inspiração Heroica" help={<Help title="Inspiração" paragraphs={GLOSSARIO.inspiracao} />}>
             <button
               className={`btn w-full ${d.inspiration ? "btn-primary" : "btn-ghost border border-rule"}`}
               aria-pressed={d.inspiration}
               onClick={() => patchDetails({ inspiration: !d.inspiration })}
             >
-              {d.inspiration ? "Tenho inspiração!" : "Sem inspiração"}
+              {d.inspiration ? "Tenho — rerrolar 1 dado" : "Sem inspiração"}
             </button>
           </StatBox>
         </div>
@@ -1053,8 +1143,3 @@ function StatBox({ label, help, children }: { label: string; help: React.ReactNo
   );
 }
 
-function bonusText(b: Partial<Record<AbilityKey, number>>) {
-  const entries = Object.entries(b) as [AbilityKey, number][];
-  if (entries.length === 6) return "+1 em todos";
-  return entries.map(([k, v]) => `+${v} ${ABILITY_LABEL[k]}`).join(", ");
-}
