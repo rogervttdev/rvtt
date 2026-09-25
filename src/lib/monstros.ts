@@ -1,28 +1,42 @@
 /**
- * Monstros do SRD 5.1 (System Reference Document), Wizards of the Coast LLC,
- * licença Creative Commons Attribution 4.0 (CC-BY-4.0):
- * https://creativecommons.org/licenses/by/4.0/legalcode
+ * Bestiário do SRD 5.1/5.2, Wizards of the Coast LLC, licença Creative Commons
+ * Attribution 4.0 (CC-BY-4.0): https://creativecommons.org/licenses/by/4.0/legalcode
  *
- * Só criaturas de conteúdo aberto (nenhuma "Product Identity" como Observador,
- * Devorador de Mentes, Githyanki etc.). Nomes na tradução oficial brasileira.
+ * O catálogo completo (334 criaturas) mora em `monstros-srd.ts`, gerado a
+ * partir do projeto 5e-bits/5e-database. Aqui só ficam os tipos, os ajustes
+ * de nome/descrição para as criaturas mais comuns e as funções auxiliares
+ * usadas pelo resto do app. Só criaturas de conteúdo aberto (nenhuma "Product
+ * Identity" como Observador, Devorador de Mentes, Githyanki etc.).
  */
+import { SRD_MONSTERS } from "./monstros-srd";
 import type { CreatureSize, TokenAttack, TokenStats } from "./types";
 
-export type MonsterDef = {
+export type SrdMonster = {
   id: string;
   name: string;
+  namePt?: string | null;
   size: CreatureSize;
   type: string;
+  typePt: string;
+  alignment: string;
   ac: number;
   hpFormula: string;
   hpAvg: number;
   speed: number;
+  speedNote?: string | null;
   abilities: { str: number; dex: number; con: number; int: number; wis: number; cha: number };
+  cr: number;
+  crLabel: string;
+  xp: number;
   attacks: TokenAttack[];
-  traits?: string[];
-  desc: string;
+  traits?: string[] | null;
+  senses?: string | null;
+  languages?: string | null;
   color: string;
 };
+
+/** Mantido por compatibilidade com o resto do app: sempre tem uma descrição em português. */
+export type MonsterDef = SrdMonster & { desc: string };
 
 export const SIZE_LABEL: Record<CreatureSize, string> = {
   minusculo: "Miniúsculo",
@@ -43,101 +57,53 @@ export const SIZE_CELLS: Record<CreatureSize, number> = {
   imenso: 4,
 };
 
-export const MONSTERS: MonsterDef[] = [
-  {
-    id: "goblin", name: "Goblin", size: "pequeno", type: "humanoide", ac: 15, hpFormula: "2d6", hpAvg: 7, speed: 9,
-    abilities: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
-    attacks: [{ name: "Cimitarra", bonus: 4, damage: "1d6+2" }, { name: "Arco curto", bonus: 4, damage: "1d6+2" }],
-    traits: ["Fuga ágil: pode Desengajar ou se Esconder como ação bônus"],
-    desc: "Pequeno, covarde e numeroso. Prefere emboscar em grupo e fugir se a luta virar.",
-    color: "#4c7a36",
-  },
-  {
-    id: "kobold", name: "Kobold", size: "pequeno", type: "réptil", ac: 12, hpFormula: "2d6-2", hpAvg: 5, speed: 9,
-    abilities: { str: 7, dex: 15, con: 9, int: 8, wis: 7, cha: 8 },
-    attacks: [{ name: "Adaga", bonus: 4, damage: "1d4+2" }, { name: "Funda", bonus: 4, damage: "1d4+2" }],
-    traits: ["Tática de matilha: vantagem no ataque se um aliado estiver ao lado do alvo", "Sensibilidade à luz do sol: desvantagem em ataques e Percepção sob luz do sol"],
-    desc: "Réptil pequeno e covarde, mas perigoso em bando e com armadilhas.",
-    color: "#8f2417",
-  },
-  {
-    id: "esqueleto", name: "Esqueleto", size: "medio", type: "morto-vivo", ac: 13, hpFormula: "2d8+4", hpAvg: 13, speed: 9,
-    abilities: { str: 10, dex: 14, con: 15, int: 6, wis: 8, cha: 5 },
-    attacks: [{ name: "Espada curta", bonus: 4, damage: "1d6+2" }, { name: "Arco curto", bonus: 4, damage: "1d6+2" }],
-    traits: ["Imune a veneno", "Vulnerável a dano de concussão"],
-    desc: "Ossos animados por magia sombria, sem vontade própria além de obedecer." ,
-    color: "#b8b8a8",
-  },
-  {
-    id: "zumbi", name: "Zumbi", size: "medio", type: "morto-vivo", ac: 8, hpFormula: "3d8+9", hpAvg: 22, speed: 6,
-    abilities: { str: 13, dex: 6, con: 16, int: 3, wis: 6, cha: 5 },
-    attacks: [{ name: "Aperto", bonus: 3, damage: "1d6+1" }],
-    traits: ["Fortidão de morto-vivo: ao ir a 0 PV, faz um teste de Constituição para ficar com 1 PV"],
-    desc: "Lento e sem juízo, mas resistente e implacável. Vem sempre em bando.",
-    color: "#5a6b4a",
-  },
-  {
-    id: "orc", name: "Orc", size: "medio", type: "humanoide", ac: 13, hpFormula: "2d8+3", hpAvg: 15, speed: 9,
-    abilities: { str: 16, dex: 12, con: 16, int: 7, wis: 11, cha: 10 },
-    attacks: [{ name: "Machado grande", bonus: 5, damage: "1d12+3" }, { name: "Azagaia", bonus: 5, damage: "1d6+3" }],
-    traits: ["Fúria implacável: ao cair a 0 PV, faz um teste de Constituição para ficar com 1 PV"],
-    desc: "Forte e agressivo, ataca de frente sem muita estratégia.",
-    color: "#5f7a3a",
-  },
-  {
-    id: "lobo", name: "Lobo", size: "medio", type: "fera", ac: 13, hpFormula: "2d8+2", hpAvg: 11, speed: 12,
-    abilities: { str: 12, dex: 15, con: 12, int: 3, wis: 12, cha: 6 },
-    attacks: [{ name: "Mordida", bonus: 4, damage: "2d4+2" }],
-    traits: ["Tática de matilha: vantagem se um aliado estiver ao lado do alvo", "Percepção auditiva e olfativa aguçadas"],
-    desc: "Caça em bando e tenta derrubar quem se afasta do grupo.",
-    color: "#6b6b6b",
-  },
-  {
-    id: "urso-pardo", name: "Urso Pardo", size: "grande", type: "fera", ac: 11, hpFormula: "4d10+12", hpAvg: 34, speed: 12,
-    abilities: { str: 19, dex: 10, con: 16, int: 2, wis: 13, cha: 7 },
-    attacks: [{ name: "Garra", bonus: 7, damage: "2d6+5" }, { name: "Mordida", bonus: 7, damage: "1d8+5" }],
-    desc: "Grande e forte; ataca duas vezes por turno se provocado.",
-    color: "#6b4a2a",
-  },
-  {
-    id: "aranha-gigante", name: "Aranha Gigante", size: "grande", type: "monstruosidade", ac: 14, hpFormula: "4d10+4", hpAvg: 26, speed: 9,
-    abilities: { str: 14, dex: 16, con: 12, int: 2, wis: 11, cha: 4 },
-    attacks: [{ name: "Mordida", bonus: 5, damage: "1d8+3" }],
-    traits: ["Veneno na mordida (resistência de Constituição ou fica envenenado)", "Escala paredes e teias sem precisar de teste", "Sente vibrações em teias a até 18 m"],
-    desc: "Tece teias grudentas e ataca de emboscada, envenenando a presa.",
-    color: "#2a1c12",
-  },
-  {
-    id: "ogro", name: "Ogro", size: "grande", type: "gigante", ac: 11, hpFormula: "7d10+21", hpAvg: 59, speed: 12,
-    abilities: { str: 19, dex: 8, con: 16, int: 5, wis: 7, cha: 7 },
-    attacks: [{ name: "Porrete grande", bonus: 6, damage: "2d8+4" }],
-    desc: "Enorme, burro e brutal, mas causa dano muito alto num só golpe.",
-    color: "#7a6a4a",
-  },
-  {
-    id: "bandido", name: "Bandido", size: "medio", type: "humanoide", ac: 12, hpFormula: "2d8+2", hpAvg: 11, speed: 9,
-    abilities: { str: 11, dex: 12, con: 12, int: 10, wis: 10, cha: 10 },
-    attacks: [{ name: "Cimitarra", bonus: 3, damage: "1d6+1" }, { name: "Besta leve", bonus: 3, damage: "1d8+1" }],
-    desc: "Assaltante comum, luta por dinheiro e foge se a luta virar contra ele.",
-    color: "#8d6a2c",
-  },
-  {
-    id: "carniçal", name: "Carniçal", size: "medio", type: "morto-vivo", ac: 12, hpFormula: "5d8", hpAvg: 22, speed: 9,
-    abilities: { str: 13, dex: 15, con: 10, int: 7, wis: 10, cha: 6 },
-    attacks: [{ name: "Garras", bonus: 2, damage: "2d4+2" }, { name: "Mordida", bonus: 2, damage: "2d6+2" }],
-    traits: ["Garras paralisam humanoides que falharem na resistência de Constituição (elfos são imunes)"],
-    desc: "Morto-vivo faminto que caça em cemitérios e ruínas, paralisando as vítimas.",
-    color: "#4a4a3a",
-  },
-  {
-    id: "rato-gigante", name: "Rato Gigante", size: "pequeno", type: "fera", ac: 12, hpFormula: "2d6", hpAvg: 7, speed: 9,
-    abilities: { str: 7, dex: 15, con: 11, int: 2, wis: 10, cha: 4 },
-    attacks: [{ name: "Mordida", bonus: 4, damage: "1d4+2" }],
-    traits: ["Tática de matilha: vantagem se um aliado estiver ao lado do alvo"],
-    desc: "Comum em esgotos e porões, quase inofensivo sozinho, perigoso em bando.",
-    color: "#7a6a5a",
-  },
-];
+// ---------------------------------------------------------------------------
+// Ajustes manuais: ids em português já usados em mesas antigas, e as
+// descrições didáticas escritas à mão para as 12 criaturas mais comuns.
+// ---------------------------------------------------------------------------
+
+const ID_ALIASES: Record<string, string> = {
+  skeleton: "esqueleto",
+  zombie: "zumbi",
+  wolf: "lobo",
+  "brown-bear": "urso-pardo",
+  "giant-spider": "aranha-gigante",
+  ogre: "ogro",
+  bandit: "bandido",
+  ghoul: "carniçal",
+  "giant-rat": "rato-gigante",
+};
+
+const MANUAL: Record<string, { namePt: string; desc: string }> = {
+  goblin: { namePt: "Goblin", desc: "Pequeno, covarde e numeroso. Prefere emboscar em grupo e fugir se a luta virar." },
+  kobold: { namePt: "Kobold", desc: "Réptil pequeno e covarde, mas perigoso em bando e com armadilhas." },
+  esqueleto: { namePt: "Esqueleto", desc: "Ossos animados por magia sombria, sem vontade própria além de obedecer." },
+  zumbi: { namePt: "Zumbi", desc: "Lento e sem juízo, mas resistente e implacável. Vem sempre em bando." },
+  orc: { namePt: "Orc", desc: "Forte e agressivo, ataca de frente sem muita estratégia." },
+  lobo: { namePt: "Lobo", desc: "Caça em bando e tenta derrubar quem se afasta do grupo." },
+  "urso-pardo": { namePt: "Urso Pardo", desc: "Grande e forte; ataca duas vezes por turno se provocado." },
+  "aranha-gigante": { namePt: "Aranha Gigante", desc: "Tece teias grudentas e ataca de emboscada, envenenando a presa." },
+  ogro: { namePt: "Ogro", desc: "Enorme, burro e brutal, mas causa dano muito alto num só golpe." },
+  bandido: { namePt: "Bandido", desc: "Assaltante comum, luta por dinheiro e foge se a luta virar contra ele." },
+  "carniçal": { namePt: "Carniçal", desc: "Morto-vivo faminto que caça em cemitérios e ruínas, paralisando as vítimas." },
+  "rato-gigante": { namePt: "Rato Gigante", desc: "Comum em esgotos e porões, quase inofensivo sozinho, perigoso em bando." },
+};
+
+/** As 334 criaturas do SRD, com nomes e ids ajustados e uma descrição sempre presente. */
+export const MONSTERS: MonsterDef[] = SRD_MONSTERS.map((m): MonsterDef => {
+  const id = ID_ALIASES[m.id] ?? m.id;
+  const manual = MANUAL[id];
+  return {
+    ...m,
+    id,
+    name: manual?.namePt ?? m.namePt ?? m.name,
+    desc:
+      manual?.desc ??
+      `${m.typePt} de porte ${SIZE_LABEL[m.size].toLowerCase()}, Nível de Desafio ${m.crLabel}${
+        m.alignment ? `, tendência ${m.alignment}` : ""
+      }.`,
+  };
+});
 
 export const findMonster = (id?: string) => MONSTERS.find((m) => m.id === id);
 
@@ -175,3 +141,23 @@ export function normalizeTokenStats(raw: unknown): TokenStats {
     blocks: r.blocks,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Filtros do Bestiário
+// ---------------------------------------------------------------------------
+
+const CR_LABEL_BY_VALUE = new Map(MONSTERS.map((m) => [m.cr, m.crLabel]));
+
+/** Todos os valores de ND presentes no bestiário, em ordem crescente, com o rótulo (ex.: "1/8"). */
+export const CR_OPTIONS: { value: number; label: string }[] = [...CR_LABEL_BY_VALUE.entries()]
+  .sort((a, b) => a[0] - b[0])
+  .map(([value, label]) => ({ value, label }));
+
+/** Todos os tipos de criatura presentes, ordenados pelo nome em português. */
+export const TYPE_OPTIONS: { value: string; label: string }[] = [...new Map(MONSTERS.map((m) => [m.type, m.typePt])).entries()]
+  .sort((a, b) => a[1].localeCompare(b[1], "pt-BR"))
+  .map(([value, label]) => ({ value, label }));
+
+export const SIZE_OPTIONS: { value: CreatureSize; label: string }[] = (
+  ["minusculo", "pequeno", "medio", "grande", "enorme", "imenso"] as CreatureSize[]
+).map((value) => ({ value, label: SIZE_LABEL[value] }));

@@ -122,7 +122,7 @@ export type Room = {
 
 export type CreatureSize = "minusculo" | "pequeno" | "medio" | "grande" | "enorme" | "imenso";
 
-export type TokenAttack = { name: string; bonus: number; damage: string };
+export type TokenAttack = { name: string; bonus: number; damage: string; type?: string };
 
 /** Estado de combate do token: PV, CA, deslocamento, atributos e ataques — mostrado no tooltip. */
 export type TokenStats = {

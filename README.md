@@ -57,11 +57,20 @@ npm run dev
 ## Como o tempo real funciona
 
 Cada mesa usa o canal `room:<id>`:
-- **Broadcast** — `token-move`, `token-add`, `token-remove`, `roll`, `room-update` (baixa latência, sem passar pelo banco)
+- **Broadcast** — `token-move`, `token-add`, `token-add-batch`, `token-update`, `token-remove`, `roll`, `room-update` (baixa latência, sem passar pelo banco)
 - **Presence** — lista de quem está conectado
 - O banco guarda o estado: ao soltar um token a posição é salva em `tokens`, então quem entra depois vê o mapa atualizado.
 
 Permissões: cada jogador move/remove os próprios tokens; o mestre (dono da mesa) move/remove qualquer um e altera a configuração.
+
+## Bestiário completo, cenário em lote, iniciativa, dados e ficha flutuante
+
+- **Bestiário do SRD** (botão "🐉 Bestiário"): as **334 criaturas** do SRD 5.1 — nenhuma de Product Identity (Observador, Devorador de Mentes, Githyanki etc.) — com busca em tempo real e filtros por **Nível de Desafio** (0 a 30), **Tipo** (Aberração, Fera, Morto-vivo, Dragão…) e **Tamanho**. Cada uma já vem com CA, PV, deslocamento, atributos e ataques prontos. Dados em `src/lib/monstros-srd.ts` (gerado do projeto 5e-bits/5e-database, licença MIT, que organiza o próprio SRD 5.1 da Wizards, CC-BY-4.0) e ajustes finos em `src/lib/monstros.ts`. Cerca de 160 criaturas têm nome traduzido; as demais mantêm o nome oficial em inglês (tipo e tamanho sempre em português).
+- **Terrenos e cenário** (segunda aba do mesmo painel): paredes, fogueiras, natureza, mobília e perigos (`src/lib/cenario.ts`), sem ficha de combate.
+- **Colocação em lote**: em qualquer item (monstro ou cenário), escolha a quantidade e clique em "Colocar" — um único `insert` cria todos os tokens de uma vez, já espalhados em casas livres adjacentes. Também dá para arrastar um item para uma casa específica.
+- **Rastreador de Iniciativa** (`src/components/InitiativeTracker.tsx`): barra fixa no topo do mapa. O mestre adiciona qualquer token à ordem com um valor de iniciativa, avança/volta o turno e acompanha a rodada atual; o token da vez ganha um anel dourado pulsante no mapa. Fica em `rooms.turn_order` (jsonb), `rooms.current_turn` e `rooms.round`.
+- **Animação de dados** (`src/components/DiceOverlay.tsx`): toda rolagem aparece num overlay central com o dado girando (CSS) por ~0,9 s e depois revela o total em destaque, com brilho verde num 20 natural e vermelho num 1 natural, antes de ir para o histórico.
+- **Ficha flutuante sobre a mesa** (`src/components/CharacterSheetModal.tsx`): jogadores têm o botão "📜 Minha ficha"; o mestre pode clicar no nome de qualquer jogador presente (barra "Na mesa") para abrir a ficha dele. A ficha completa (`CharacterSheet`, extraída de `/fichas/[id]`) abre num modal sobre o mapa, sem trocar de página.
 
 ## Ficha para iniciantes
 
