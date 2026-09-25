@@ -810,6 +810,102 @@ body {
     outline: 2px solid var(--color-brass-deep);
     outline-offset: 2px;
   }
+  /* Tooltip de combate flutuante sobre o token */
+  .token-tooltip {
+    position: fixed;
+    z-index: 70;
+    width: 15rem;
+    transform: translate(-50%, -100%);
+    border-radius: 0.55rem;
+    border: 1px solid var(--color-brass-deep);
+    background: linear-gradient(to bottom, #3f2819, #2a1a10);
+    color: var(--color-foam);
+    padding: 0.65rem 0.8rem;
+    box-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.6);
+    pointer-events: none;
+  }
+  .token-tooltip-ac {
+    display: inline-flex;
+    height: 1.4rem;
+    width: 1.4rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 35% 30%, #d8b56c, #8d6a2c);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-wood-night);
+  }
+  .token-tooltip-hpbar {
+    display: block;
+    height: 0.3rem;
+    margin-top: 0.2rem;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.15);
+  }
+  .token-tooltip-hpfill {
+    display: block;
+    height: 100%;
+    background: var(--color-moss);
+  }
+  .token-tooltip-hpfill.is-low {
+    background: var(--color-blood);
+  }
+  /* Bestiário: gaveta lateral deslizante */
+  .monster-panel {
+    position: fixed;
+    top: 3.5rem;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    display: flex;
+    width: min(22rem, 92vw);
+    flex-direction: column;
+    background-color: var(--color-wood);
+    background-image: var(--wood-grain), linear-gradient(to bottom, #3f2819, #2a1a10);
+    background-size: 600px 300px, auto;
+    color: var(--color-foam);
+    box-shadow: 8px 0 30px -10px rgb(0 0 0 / 0.6);
+    transform: translateX(-105%);
+    transition: transform 200ms ease-out;
+  }
+  .monster-panel.is-open {
+    transform: translateX(0);
+  }
+  .monster-panel-backdrop {
+    position: fixed;
+    inset: 3.5rem 0 0 0;
+    z-index: 55;
+    background: rgb(0 0 0 / 0.4);
+  }
+  .monster-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(195 154 78 / 0.25);
+    background: rgb(255 255 255 / 0.04);
+    padding: 0.55rem 0.6rem;
+    cursor: grab;
+  }
+  .monster-row:hover {
+    background: rgb(255 255 255 / 0.08);
+  }
+  .monster-token {
+    display: inline-flex;
+    height: 2.1rem;
+    width: 2.1rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 2px solid rgb(246 236 212 / 0.7);
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-foam);
+  }
   .panel {
     border: 1px solid var(--color-rule);
     background-color: var(--color-vellum);

@@ -82,6 +82,8 @@ alter table public.tokens add column if not exists owner_id uuid default auth.ui
 alter table public.tokens add column if not exists character_id uuid references public.characters(id) on delete set null;
 alter table public.tokens add column if not exists label text not null default 'Token';
 alter table public.tokens add column if not exists color text not null default '#1d5fa8';
+alter table public.tokens add column if not exists stats jsonb not null
+  default '{"ac":10,"hp_current":10,"hp_max":10,"speed":9,"size":"medio"}'::jsonb;  -- CA, PV, deslocamento, tamanho, atributos e ataques
 alter table public.tokens add column if not exists x int not null default 0;
 alter table public.tokens add column if not exists y int not null default 0;
 alter table public.tokens add column if not exists created_at timestamptz not null default now();

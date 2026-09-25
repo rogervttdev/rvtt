@@ -114,6 +114,23 @@ export type Room = {
   created_at: string;
 };
 
+export type CreatureSize = "minusculo" | "pequeno" | "medio" | "grande" | "enorme" | "imenso";
+
+export type TokenAttack = { name: string; bonus: number; damage: string };
+
+/** Estado de combate do token: PV, CA, deslocamento, atributos e ataques — mostrado no tooltip. */
+export type TokenStats = {
+  ac: number;
+  hp_current: number;
+  hp_max: number;
+  speed: number;
+  size: CreatureSize;
+  abilities?: { str: number; dex: number; con: number; int: number; wis: number; cha: number };
+  attacks?: TokenAttack[];
+  /** id do monstro no catálogo (src/lib/monstros.ts), quando veio de lá */
+  monsterId?: string;
+};
+
 export type Token = {
   id: string;
   room_id: string;
@@ -123,6 +140,7 @@ export type Token = {
   color: string;
   x: number;
   y: number;
+  stats: TokenStats;
   created_at?: string;
 };
 

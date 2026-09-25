@@ -9,7 +9,10 @@ import { useUser } from "@/components/SessionProvider";
 import { DiceRoller } from "@/components/DiceRoller";
 import { supabase } from "@/lib/supabase";
 import { TOKEN_COLORS, initials, uid } from "@/lib/dnd";
-import type { PresenceUser, Room, RollEntry, RollResult, Token } from "@/lib/types";
+import { DEFAULT_TOKEN_STATS, MONSTERS, SIZE_CELLS, normalizeTokenStats, statsFromMonster, type MonsterDef } from "@/lib/monstros";
+import { MonsterPanel } from "@/components/MonsterPanel";
+import { TokenTooltip } from "@/components/TokenTooltip";
+import type { PresenceUser, Room, RollEntry, RollResult, Token, TokenStats } from "@/lib/types";
 
 export default function MesaPage() {
   return (
@@ -28,15 +31,18 @@ function GameTable() {
   const [room, setRoom] = useState<Room | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "missing">("loading");
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [myChars, setMyChars] = useState<{ id: string; name: string }[]>([]);
+  const [myChars, setMyChars] = useState<{ id: string; name: string; hp_current: number; hp_max: number; ac: number; speed: number }[]>([]);
   const [online, setOnline] = useState<PresenceUser[]>([]);
   const [rolls, setRolls] = useState<RollEntry[]>([]);
   const [connected, setConnected] = useState(false);
-  const [cell, setCell] = useState(48);
+  const [cell, setCell] = useState(50); // 50px por quadrado, como no tabuleiro físico
   const [selected, setSelected] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [bestiaryOpen, setBestiaryOpen] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -52,13 +58,13 @@ function GameTable() {
       const [roomRes, tokenRes, charRes] = await Promise.all([
         supabase.from("rooms").select("*").eq("id", roomId).maybeSingle(),
         supabase.from("tokens").select("*").eq("room_id", roomId).order("created_at"),
-        supabase.from("characters").select("id,name").eq("user_id", user.id).order("name"),
+        supabase.from("characters").select("id,name,hp_current,hp_max,ac,speed").eq("user_id", user.id).order("name"),
       ]);
       if (cancelled) return;
       if (!roomRes.data) return setStatus("missing");
       setRoom(roomRes.data as Room);
-      setTokens((tokenRes.data as Token[]) ?? []);
-      setMyChars((charRes.data as { id: string; name: string }[]) ?? []);
+      setTokens(((tokenRes.data as Token[]) ?? []).map((t) => ({ ...t, stats: normalizeTokenStats(t.stats) })));
+      setMyChars((charRes.data as typeof myChars) ?? []);
       setStatus("ready");
     })();
     return () => {
@@ -78,8 +84,12 @@ function GameTable() {
         setTokens((ts) => ts.map((t) => (t.id === id ? { ...t, x, y } : t)));
       })
       .on("broadcast", { event: "token-add" }, ({ payload }) => {
-        const token = payload as Token;
+        const token = { ...(payload as Token), stats: normalizeTokenStats((payload as Token).stats) };
         setTokens((ts) => (ts.some((t) => t.id === token.id) ? ts : [...ts, token]));
+      })
+      .on("broadcast", { event: "token-update" }, ({ payload }) => {
+        const { id, stats } = payload as { id: string; stats: Partial<TokenStats> };
+        setTokens((ts) => ts.map((t) => (t.id === id ? { ...t, stats: { ...t.stats, ...stats } } : t)));
       })
       .on("broadcast", { event: "token-remove" }, ({ payload }) => {
         const { id } = payload as { id: string };
@@ -129,13 +139,13 @@ function GameTable() {
     if (error) setError(`Não foi possível salvar a posição: ${error.message}`);
   }, []);
 
-  function cellFromPointer(clientX: number, clientY: number) {
+  function cellFromPointer(clientX: number, clientY: number, span = 1) {
     const rect = boardRef.current!.getBoundingClientRect();
     const cols = room?.cols ?? 1;
     const rows = room?.rows ?? 1;
     return {
-      x: Math.max(0, Math.min(cols - 1, Math.floor((clientX - rect.left) / cell))),
-      y: Math.max(0, Math.min(rows - 1, Math.floor((clientY - rect.top) / cell))),
+      x: Math.max(0, Math.min(cols - span, Math.floor((clientX - rect.left) / cell))),
+      y: Math.max(0, Math.min(rows - span, Math.floor((clientY - rect.top) / cell))),
     };
   }
 
@@ -150,7 +160,8 @@ function GameTable() {
   function onTokenPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
     const drag = dragRef.current;
     if (!drag) return;
-    const { x, y } = cellFromPointer(e.clientX, e.clientY);
+    const span = SIZE_CELLS[tokens.find((t) => t.id === drag.id)?.stats.size ?? "medio"];
+    const { x, y } = cellFromPointer(e.clientX, e.clientY, span);
     if (x !== drag.x || y !== drag.y) {
       dragRef.current = { ...drag, x, y, moved: true };
       moveToken(drag.id, x, y);
@@ -175,33 +186,64 @@ function GameTable() {
     const d = delta[e.key];
     if (!d || !room || !canControl(t)) return;
     e.preventDefault();
-    const x = Math.max(0, Math.min(room.cols - 1, t.x + d[0]));
-    const y = Math.max(0, Math.min(room.rows - 1, t.y + d[1]));
+    const span = SIZE_CELLS[t.stats.size];
+    const x = Math.max(0, Math.min(room.cols - span, t.x + d[0]));
+    const y = Math.max(0, Math.min(room.rows - span, t.y + d[1]));
     moveToken(t.id, x, y);
     persistPosition(t.id, x, y);
   }
 
-  async function addToken(input: { label: string; color: string; character_id: string | null }) {
+  /** Acha uma casa livre no grid, respeitando o tamanho (footprint) da criatura. */
+  function freeSpot(span: number) {
+    if (!room) return { x: 0, y: 0 };
+    const occupied = new Set<string>();
+    for (const t of tokens) {
+      const s = SIZE_CELLS[t.stats.size];
+      for (let dx = 0; dx < s; dx++) for (let dy = 0; dy < s; dy++) occupied.add(`${t.x + dx},${t.y + dy}`);
+    }
+    for (let y = 0; y <= room.rows - span; y++)
+      for (let x = 0; x <= room.cols - span; x++) {
+        let free = true;
+        outer: for (let dx = 0; dx < span; dx++)
+          for (let dy = 0; dy < span; dy++)
+            if (occupied.has(`${x + dx},${y + dy}`)) {
+              free = false;
+              break outer;
+            }
+        if (free) return { x, y };
+      }
+    return { x: 0, y: 0 };
+  }
+
+  async function addToken(input: { label: string; color: string; character_id: string | null; stats?: TokenStats; at?: { x: number; y: number } }) {
     if (!room) return;
-    const occupied = new Set(tokens.map((t) => `${t.x},${t.y}`));
-    let spot = { x: 0, y: 0 };
-    outer: for (let y = 0; y < room.rows; y++)
-      for (let x = 0; x < room.cols; x++)
-        if (!occupied.has(`${x},${y}`)) {
-          spot = { x, y };
-          break outer;
-        }
+    const stats = input.stats ?? DEFAULT_TOKEN_STATS;
+    const spot = input.at ?? freeSpot(SIZE_CELLS[stats.size]);
 
     const { data, error } = await supabase
       .from("tokens")
-      .insert({ room_id: room.id, owner_id: user.id, ...input, ...spot })
+      .insert({ room_id: room.id, owner_id: user.id, label: input.label, color: input.color, character_id: input.character_id, stats, ...spot })
       .select("*")
       .single();
     if (error) return setError(`Não foi possível criar o token: ${error.message}`);
-    const token = data as Token;
+    const token = { ...(data as Token), stats: normalizeTokenStats((data as Token).stats) };
     setTokens((ts) => [...ts, token]);
     setSelected(token.id);
     send("token-add", token);
+  }
+
+  /** Instancia um monstro do bestiário direto no mapa, com CA/PV/ataques prontos. */
+  function addMonster(m: MonsterDef) {
+    addToken({ label: m.name, color: m.color, character_id: null, stats: statsFromMonster(m) });
+  }
+
+  /** Ajusta PV (ou outro campo de combate) do token: salva no banco e avisa todo mundo na hora. */
+  async function updateTokenStats(t: Token, patch: Partial<TokenStats>) {
+    const stats = { ...t.stats, ...patch };
+    setTokens((ts) => ts.map((x) => (x.id === t.id ? { ...x, stats } : x)));
+    send("token-update", { id: t.id, stats: patch });
+    const { error } = await supabase.from("tokens").update({ stats }).eq("id", t.id);
+    if (error) setError(`Não foi possível salvar: ${error.message}`);
   }
 
   async function removeToken(t: Token) {
@@ -269,8 +311,11 @@ function GameTable() {
           {isGM && <span className="rounded bg-rule px-2 py-0.5 text-xs font-bold text-ember-deep">Você é o mestre</span>}
           <label className="ml-auto flex items-center gap-2 text-sm text-dim">
             Zoom
-            <input type="range" min={24} max={96} step={4} value={cell} onChange={(e) => setCell(Number(e.target.value))} />
+            <input type="range" min={30} max={100} step={2} value={cell} onChange={(e) => setCell(Number(e.target.value))} />
           </label>
+          <button className="btn btn-ghost border border-rule" onClick={() => setBestiaryOpen(true)}>
+            🐉 Bestiário
+          </button>
           <button className="btn btn-ghost border border-rule" onClick={copyLink}>
             {copied ? "Link copiado" : "Copiar convite"}
           </button>
@@ -297,30 +342,50 @@ function GameTable() {
             onPointerDown={(e) => {
               if (e.target === e.currentTarget) setSelected(null);
             }}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const monsterId = e.dataTransfer.getData("application/x-monster-id");
+              const m = MONSTERS.find((x) => x.id === monsterId);
+              if (!m) return;
+              const at = cellFromPointer(e.clientX, e.clientY, SIZE_CELLS[m.size]);
+              addToken({ label: m.name, color: m.color, character_id: null, stats: statsFromMonster(m), at });
+            }}
           >
             {tokens.map((t) => {
               const isSel = t.id === selected;
               const mine = canControl(t);
+              const span = SIZE_CELLS[t.stats.size];
+              const hpPct = t.stats.hp_max > 0 ? Math.max(0, Math.min(100, (t.stats.hp_current / t.stats.hp_max) * 100)) : 0;
               return (
                 <button
                   key={t.id}
                   type="button"
                   title={t.label}
-                  aria-label={`${t.label}, coluna ${t.x + 1}, linha ${t.y + 1}${mine ? ". Use as setas para mover." : ""}`}
+                  aria-label={`${t.label}, coluna ${t.x + 1}, linha ${t.y + 1}, ${t.stats.hp_current} de ${t.stats.hp_max} PV${mine ? ". Use as setas para mover." : ""}`}
                   onPointerDown={(e) => onTokenPointerDown(e, t)}
                   onPointerMove={onTokenPointerMove}
                   onPointerUp={onTokenPointerUp}
                   onPointerCancel={onTokenPointerUp}
+                  onPointerEnter={(e) => {
+                    setHoveredId(t.id);
+                    setHoverPos({ x: e.clientX, y: e.clientY - cell * 0.6 });
+                  }}
+                  onPointerLeave={() => setHoveredId((id) => (id === t.id ? null : id))}
                   onKeyDown={(e) => onTokenKeyDown(e, t)}
-                  onFocus={() => setSelected(t.id)}
-                  className={`absolute flex items-center justify-center rounded-full font-display font-bold text-[#fbeed3] ${
+                  onFocus={() => {
+                    setSelected(t.id);
+                    setHoveredId(t.id);
+                  }}
+                  onBlur={() => setHoveredId((id) => (id === t.id ? null : id))}
+                  className={`absolute flex flex-col items-center justify-center rounded-full font-display font-bold text-[#fbeed3] ${
                     mine ? "cursor-grab active:cursor-grabbing" : "cursor-default"
                   }`}
                   style={{
                     left: t.x * cell + cell * 0.08,
                     top: t.y * cell + cell * 0.08,
-                    width: cell * 0.84,
-                    height: cell * 0.84,
+                    width: span * cell - cell * 0.16,
+                    height: span * cell - cell * 0.16,
                     fontSize: cell * 0.32,
                     background: t.color,
                     border: `${Math.max(2, cell * 0.05)}px solid ${isSel ? "#2a1c12" : "#f6ecd4"}`,
@@ -331,12 +396,24 @@ function GameTable() {
                   }}
                 >
                   {initials(t.label)}
+                  {hpPct < 100 && (
+                    <span className="mt-0.5 block h-1 w-2/3 overflow-hidden rounded-full bg-black/40" aria-hidden>
+                      <span className={`block h-full ${hpPct <= 25 ? "bg-blood" : "bg-moss"}`} style={{ width: `${hpPct}%` }} />
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
       </div>
+
+      {hoveredId && (() => {
+        const t = tokens.find((x) => x.id === hoveredId);
+        return t ? <TokenTooltip token={t} x={hoverPos.x} y={hoverPos.y} /> : null;
+      })()}
+
+      <MonsterPanel open={bestiaryOpen} onClose={() => setBestiaryOpen(false)} onAdd={addMonster} />
 
       {/* ---------- Painel lateral ---------- */}
       <aside className="w-full shrink-0 space-y-6 overflow-y-auto border-l border-rule bg-paper p-4 lg:w-[340px]">
@@ -364,6 +441,66 @@ function GameTable() {
                 </p>
               </div>
             </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+              <label className="block">
+                <span className="field-label">PV atual</span>
+                <input
+                  className="field px-2 py-1"
+                  type="number"
+                  value={selectedToken.stats.hp_current}
+                  disabled={!canControl(selectedToken)}
+                  onChange={(e) => updateTokenStats(selectedToken, { hp_current: Math.max(0, Math.min(selectedToken.stats.hp_max, Number(e.target.value) || 0)) })}
+                />
+              </label>
+              <label className="block">
+                <span className="field-label">PV máx.</span>
+                <input
+                  className="field px-2 py-1"
+                  type="number"
+                  value={selectedToken.stats.hp_max}
+                  disabled={!canControl(selectedToken)}
+                  onChange={(e) => updateTokenStats(selectedToken, { hp_max: Math.max(1, Number(e.target.value) || 1) })}
+                />
+              </label>
+              <label className="block">
+                <span className="field-label">CA</span>
+                <input
+                  className="field px-2 py-1"
+                  type="number"
+                  value={selectedToken.stats.ac}
+                  disabled={!canControl(selectedToken)}
+                  onChange={(e) => updateTokenStats(selectedToken, { ac: Math.max(0, Number(e.target.value) || 0) })}
+                />
+              </label>
+            </div>
+            {canControl(selectedToken) && (
+              <div className="mt-2 flex gap-2">
+                <button
+                  className="btn btn-ghost flex-1 border border-rule px-2 py-1 text-sm"
+                  onClick={() => updateTokenStats(selectedToken, { hp_current: Math.max(0, selectedToken.stats.hp_current - 1) })}
+                >
+                  −1 PV (dano)
+                </button>
+                <button
+                  className="btn btn-ghost flex-1 border border-rule px-2 py-1 text-sm"
+                  onClick={() => updateTokenStats(selectedToken, { hp_current: Math.min(selectedToken.stats.hp_max, selectedToken.stats.hp_current + 1) })}
+                >
+                  +1 PV (cura)
+                </button>
+              </div>
+            )}
+            {selectedToken.stats.attacks && selectedToken.stats.attacks.length > 0 && (
+              <ul className="mt-2 space-y-0.5 border-t border-rule pt-2 text-xs text-dim">
+                {selectedToken.stats.attacks.map((a) => (
+                  <li key={a.name}>
+                    {a.name}: {a.bonus >= 0 ? "+" : ""}
+                    {a.bonus} ({a.damage})
+                  </li>
+                ))}
+              </ul>
+            )}
+
             <div className="mt-3 flex flex-wrap gap-2">
               {selectedToken.character_id && selectedToken.owner_id === user.id && (
                 <Link href={`/fichas/${selectedToken.character_id}`} target="_blank" className="btn btn-ghost border border-rule">
@@ -423,8 +560,8 @@ function AddTokenForm({
   characters,
   onAdd,
 }: {
-  characters: { id: string; name: string }[];
-  onAdd: (t: { label: string; color: string; character_id: string | null }) => Promise<void>;
+  characters: { id: string; name: string; hp_current: number; hp_max: number; ac: number; speed: number }[];
+  onAdd: (t: { label: string; color: string; character_id: string | null; stats?: TokenStats }) => Promise<void>;
 }) {
   const [source, setSource] = useState<string>("custom");
   const [label, setLabel] = useState("");
@@ -437,7 +574,14 @@ function AddTokenForm({
     const finalLabel = char ? char.name : label.trim();
     if (!finalLabel) return;
     setBusy(true);
-    await onAdd({ label: finalLabel, color, character_id: char?.id ?? null });
+    await onAdd({
+      label: finalLabel,
+      color,
+      character_id: char?.id ?? null,
+      stats: char
+        ? { ac: char.ac, hp_current: char.hp_current, hp_max: char.hp_max, speed: char.speed, size: "medio" }
+        : undefined,
+    });
     setBusy(false);
     setLabel("");
   }

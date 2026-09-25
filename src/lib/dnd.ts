@@ -31,8 +31,8 @@ export const uid = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-export function initials(label: string) {
-  const words = label.trim().split(/\s+/).filter(Boolean);
+export function initials(label: string | null | undefined) {
+  const words = (label ?? "").trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return "?";
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
