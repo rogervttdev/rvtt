@@ -402,7 +402,10 @@ export function equipmentWeights(eq: Equipment) {
   if (eq.shield) list.push({ name: SHIELD.name, weight: SHIELD.weight });
   for (const w of eq.weapons) {
     const def = findWeapon(w.id);
+    // Se o id não for reconhecido no catálogo, usa o peso salvo na própria ficha
+    // (cópia feita quando a arma foi equipada) em vez de simplesmente ignorá-la.
     if (def) list.push({ name: def.name, weight: def.weight });
+    else if (w.weight) list.push({ name: w.name ?? "Arma", weight: w.weight });
   }
   const focus = findFocus(eq.focus);
   if (focus) list.push({ name: focus.name, weight: focus.weight });

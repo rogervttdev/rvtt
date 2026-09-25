@@ -46,6 +46,33 @@ type Props = {
   onRoll: (label: string, bonus: number, formula?: string) => void;
 };
 
+type EquippedWeapon = Equipment["weapons"][number];
+
+/**
+ * Devolve a arma do catálogo (mais atual e completa) quando o id é reconhecido;
+ * senão, reconstrói uma versão mínima a partir da cópia salva na própria ficha
+ * (nome, dano, tipo, maestria, peso) — assim a arma nunca some da lista, mesmo
+ * que o catálogo mude ou o id não seja mais encontrado.
+ */
+function resolveWeapon(w: EquippedWeapon): WeaponDef | undefined {
+  const fromCatalog = findWeapon(w.id);
+  if (fromCatalog) return fromCatalog;
+  if (!w.name || !w.damage) return undefined;
+  return {
+    id: w.id,
+    name: w.name,
+    category: "simples",
+    kind: "corpo",
+    damage: w.damage,
+    damageType: (w.damageType as WeaponDef["damageType"]) ?? null,
+    props: [],
+    weight: w.weight ?? 0,
+    mastery: w.mastery as WeaponDef["mastery"],
+    price: "—",
+    desc: "Arma salva na ficha (fora do catálogo atual).",
+  };
+}
+
 export function EquipmentSection({ equipment: eq, mods, scores, prof, cls, race, sub, ac, onChange, onRoll }: Props) {
   const [picker, setPicker] = useState<"armor" | "weapon" | "focus" | null>(null);
   const armor = findArmor(eq.armor);
@@ -55,7 +82,7 @@ export function EquipmentSection({ equipment: eq, mods, scores, prof, cls, race,
   const attacks = useMemo(() => {
     const list: (Attack & { fromFocus?: boolean })[] = eq.weapons
       .map((w) => {
-        const def = findWeapon(w.id);
+        const def = resolveWeapon(w);
         return def ? buildAttack(w.uid, def, mods, prof, weaponProficient(def, cls, race, sub)) : null;
       })
       .filter(Boolean) as Attack[];
@@ -68,7 +95,7 @@ export function EquipmentSection({ equipment: eq, mods, scores, prof, cls, race,
   const armorTrained = armor ? armorProficient(armor.category, cls, sub) : true;
   const shieldTrained = armorProficient("escudo", cls, sub);
   const strShort = armor?.strength && scores.str < armor.strength && race?.name !== "Anão";
-  const twoHanded = eq.shield && eq.weapons.some((w) => findWeapon(w.id)?.props.includes("duas_maos"));
+  const twoHanded = eq.shield && eq.weapons.some((w) => resolveWeapon(w)?.props.includes("duas_maos"));
 
   return (
     <section id="equipamento" className="mt-10 scroll-mt-20">
@@ -289,7 +316,22 @@ export function EquipmentSection({ equipment: eq, mods, scores, prof, cls, race,
         open={picker === "weapon"}
         onClose={() => setPicker(null)}
         isTrained={(w) => weaponProficient(w, cls, race, sub)}
-        onAdd={(w) => set({ weapons: [...eq.weapons, { uid: uid(), id: w.id }] })}
+        onAdd={(w) =>
+          set({
+            weapons: [
+              ...eq.weapons,
+              {
+                uid: uid(),
+                id: w.id,
+                name: w.name,
+                damage: w.damage,
+                damageType: w.damageType ?? undefined,
+                mastery: w.mastery,
+                weight: w.weight,
+              },
+            ],
+          })
+        }
       />
 
       <Picker open={picker === "focus"} title="Escolher foco de conjuração" onClose={() => setPicker(null)}>

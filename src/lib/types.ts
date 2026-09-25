@@ -52,7 +52,22 @@ export type SkillKey =
 export type Equipment = {
   armor: string | null;
   shield: boolean;
-  weapons: { uid: string; id: string }[];
+  /**
+   * Cada arma equipada. `id` aponta para o catálogo (src/lib/equipamento.ts), usado
+   * para calcular o bônus de ataque (que depende dos atributos do personagem). Os
+   * demais campos são uma cópia da arma no momento em que foi adicionada — a ficha
+   * sempre tem nome, dano, tipo de dano, maestria e peso disponíveis mesmo que o
+   * catálogo mude ou o id não seja reconhecido por algum motivo.
+   */
+  weapons: {
+    uid: string;
+    id: string;
+    name?: string;
+    damage?: string;
+    damageType?: string;
+    mastery?: string;
+    weight?: number;
+  }[];
   focus: string | null;
   /** Ajuste manual na CA (item mágico, magia etc.) */
   acBonus: number;
