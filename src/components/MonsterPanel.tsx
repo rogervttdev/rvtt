@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Help } from "./Help";
 import { CR_OPTIONS, MONSTERS, SIZE_LABEL, SIZE_OPTIONS, TYPE_OPTIONS, type MonsterDef } from "@/lib/monstros";
 import { SCENERY, SCENERY_CATEGORY_LABEL, type SceneryCategory, type SceneryDef } from "@/lib/cenario";
@@ -10,6 +10,7 @@ type Props = {
   onClose: () => void;
   onAddMonster: (monster: MonsterDef, qty: number) => void;
   onAddScenery: (item: SceneryDef, qty: number) => void;
+  initialTab?: Tab;
 };
 
 type Tab = "monstros" | "cenario";
@@ -22,8 +23,11 @@ const MAX_SHOWN = 60;
  * cenário. Cada item tem um campo de quantidade — colocar "5" de uma vez insere
  * os cinco tokens já espalhados em casas livres adjacentes.
  */
-export function MonsterPanel({ open, onClose, onAddMonster, onAddScenery }: Props) {
-  const [tab, setTab] = useState<Tab>("monstros");
+export function MonsterPanel({ open, onClose, onAddMonster, onAddScenery, initialTab }: Props) {
+  const [tab, setTab] = useState<Tab>(initialTab ?? "monstros");
+  useEffect(() => {
+    if (open && initialTab) setTab(initialTab);
+  }, [open, initialTab]);
   const [query, setQuery] = useState("");
   const [crMin, setCrMin] = useState<number>(CR_OPTIONS[0]?.value ?? 0);
   const [crMax, setCrMax] = useState<number>(CR_OPTIONS[CR_OPTIONS.length - 1]?.value ?? 30);

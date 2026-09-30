@@ -455,6 +455,9 @@ export function CharacterSheet({
           inspiration={d.inspiration}
           onInspiration={(inspiration) => patchDetails({ inspiration })}
           onResources={(resources) => patch({ resources })}
+          level={char.level}
+          activeEffects={d.activeEffects}
+          onActiveEffects={(activeEffects) => patchDetails({ activeEffects })}
         />
       )}
 
@@ -1003,6 +1006,8 @@ export function CharacterSheet({
         ac={derived.ac}
         onChange={(equipment) => patch({ equipment })}
         onRoll={doRoll}
+        raging={d.activeEffects.includes("rage")}
+        level={char.level}
       />
 
       {/* ---------- Testes de resistência ---------- */}

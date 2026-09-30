@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Help } from "./Help";
 import { uid } from "@/lib/dnd";
+import { rageDamageBonus } from "@/lib/estados";
 import type { ResourceDef } from "@/lib/recursos";
 import type { Resources } from "@/lib/types";
 
@@ -12,14 +13,28 @@ type Props = {
   inspiration: boolean;
   onInspiration: (v: boolean) => void;
   onResources: (r: Resources) => void;
+  level: number;
+  activeEffects: string[];
+  onActiveEffects: (effects: string[]) => void;
 };
 
 const UNLIMITED = 99;
 
-export function ResourcesTab({ defs, resources, inspiration, onInspiration, onResources }: Props) {
+export function ResourcesTab({ defs, resources, inspiration, onInspiration, onResources, level, activeEffects, onActiveEffects }: Props) {
   const [form, setForm] = useState({ name: "", max: 1, recharge: "long" as "short" | "long" });
   const setUsed = (key: string, max: number, n: number) =>
     onResources({ ...resources, used: { ...resources.used, [key]: Math.max(0, Math.min(max, n)) } });
+
+  const raging = activeEffects.includes("rage");
+  function toggleRage(max: number, used: number) {
+    if (raging) {
+      onActiveEffects(activeEffects.filter((e) => e !== "rage"));
+    } else {
+      if (used >= max) return;
+      setUsed("furia", max, used + 1);
+      onActiveEffects([...activeEffects, "rage"]);
+    }
+  }
 
   const all: (ResourceDef & { custom?: boolean })[] = [
     ...defs,
@@ -74,6 +89,26 @@ export function ResourcesTab({ defs, resources, inspiration, onInspiration, onRe
               </div>
               {unlimited ? (
                 <p className="mt-2 font-semibold text-moss">Usos ilimitados.</p>
+              ) : r.key === "furia" ? (
+                <div className="mt-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {Array.from({ length: r.max }, (_, i) => (
+                      <span key={i} className={`pip pip-lg ${i < used ? "is-spent" : ""}`} aria-hidden />
+                    ))}
+                    <span className="ml-2 text-sm text-dim">
+                      {left} de {r.max} {left === 1 ? "restante" : "restantes"}
+                    </span>
+                  </div>
+                  <button
+                    className={`btn mt-2 w-full ${raging ? "btn-primary" : "btn-ghost border border-rule"}`}
+                    aria-pressed={raging}
+                    disabled={!raging && left <= 0}
+                    onClick={() => toggleRage(r.max, used)}
+                  >
+                    {raging ? `🔥 Em fúria — +${rageDamageBonus(level)} de dano corpo a corpo` : left > 0 ? "Entrar em fúria" : "Sem usos — descanse"}
+                  </button>
+                  {raging && <p className="mt-1 text-xs text-dim">Some sozinho no dano ao rolar uma arma corpo a corpo em Equipamento.</p>}
+                </div>
               ) : pool ? (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <span className="font-display text-3xl font-bold">{left}</span>

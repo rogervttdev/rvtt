@@ -63,6 +63,18 @@ Cada mesa usa o canal `room:<id>`:
 
 Permissões: cada jogador move/remove os próprios tokens; o mestre (dono da mesa) move/remove qualquer um e altera a configuração.
 
+## Visual da mesa (HUD, dock e painel por abas)
+
+A mesa foi redesenhada para ser entendida por quem nunca usou uma mesa virtual, sem perder nada do que já funcionava:
+
+- **Barra superior (HUD)**: nome da mesa, status da conexão ("Conectado"/"Reconectando…"), selo de mestre, avatares de quem está na mesa agora (o mestre clica num avatar para abrir a ficha daquele jogador) e os botões "Convidar amigos" e "Como jogar".
+- **Dock lateral**: cada ferramenta é um botão grande com ícone **e** palavra — Heróis, Ficha, Dados, Combate, Monstros e Cenário (só para o mestre) e Ajuda. Nada para adivinhar.
+- **Painel por abas** (à direita): "Ação" (aparece sozinha ao clicar num token — PV com barra e botões rápidos +5/+1/−1/−5, CA, deslocamento, armas com botão de rolar ataque/dano, e poderes de classe como a Fúria), "Heróis" (colocar personagem no mapa), "Dados" (rolar e ver o histórico) e "Combate" (ordem de iniciativa). O mestre tem também a aba "Mesa" com as configurações.
+- **Passo a passo** (`src/components/mesa/WelcomeGuide.tsx`): aparece sozinho na primeira visita de cada pessoa (jogador ou mestre têm textos diferentes) e pode ser reaberto a qualquer momento em "❓ Ajuda".
+- **Zoom com botões** (`src/components/mesa/StageControls.tsx`): `−`/`+` e "Ajustar", que calcula o tamanho de célula para o mapa caber inteiro na tela.
+- Cada peça no mapa agora mostra o **nome embaixo** (quando o zoom permite), além do PV e do selo de Fúria — sem precisar passar o mouse para saber quem é quem.
+- Nada mudou na parte de dados: o hook `src/lib/mesa-canal.ts` concentra a conexão Realtime (Broadcast + Presence) num só lugar, usado pela página da mesa.
+
 ## Bestiário completo, cenário em lote, iniciativa, dados e ficha flutuante
 
 - **Bestiário do SRD** (botão "🐉 Bestiário"): as **334 criaturas** do SRD 5.1 — nenhuma de Product Identity (Observador, Devorador de Mentes, Githyanki etc.) — com busca em tempo real e filtros por **Nível de Desafio** (0 a 30), **Tipo** (Aberração, Fera, Morto-vivo, Dragão…) e **Tamanho**. Cada uma já vem com CA, PV, deslocamento, atributos e ataques prontos. Dados em `src/lib/monstros-srd.ts` (gerado do projeto 5e-bits/5e-database, licença MIT, que organiza o próprio SRD 5.1 da Wizards, CC-BY-4.0) e ajustes finos em `src/lib/monstros.ts`. Cerca de 160 criaturas têm nome traduzido; as demais mantêm o nome oficial em inglês (tipo e tamanho sempre em português).

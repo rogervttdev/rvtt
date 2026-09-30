@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Help, HelpCalc } from "./Help";
+import { damageWithRage, rageDamageBonus } from "@/lib/estados";
 import { Picker } from "./Picker";
 import { formatMod, uid } from "@/lib/dnd";
 import { GLOSSARIO } from "@/lib/glossario";
@@ -24,6 +25,7 @@ import {
   findFocus,
   findWeapon,
   maneuverDc,
+  resolveEquippedWeapon as resolveWeapon,
   weaponProficient,
   type ArmorDef,
   type Attack,
@@ -44,36 +46,12 @@ type Props = {
   ac: { total: number; parts: string[] };
   onChange: (eq: Equipment) => void;
   onRoll: (label: string, bonus: number, formula?: string) => void;
+  /** Personagem em fúria agora (Bárbaro) e nível, para somar o bônus de dano corpo a corpo. */
+  raging?: boolean;
+  level?: number;
 };
 
-type EquippedWeapon = Equipment["weapons"][number];
-
-/**
- * Devolve a arma do catálogo (mais atual e completa) quando o id é reconhecido;
- * senão, reconstrói uma versão mínima a partir da cópia salva na própria ficha
- * (nome, dano, tipo, maestria, peso) — assim a arma nunca some da lista, mesmo
- * que o catálogo mude ou o id não seja mais encontrado.
- */
-function resolveWeapon(w: EquippedWeapon): WeaponDef | undefined {
-  const fromCatalog = findWeapon(w.id);
-  if (fromCatalog) return fromCatalog;
-  if (!w.name || !w.damage) return undefined;
-  return {
-    id: w.id,
-    name: w.name,
-    category: "simples",
-    kind: "corpo",
-    damage: w.damage,
-    damageType: (w.damageType as WeaponDef["damageType"]) ?? null,
-    props: [],
-    weight: w.weight ?? 0,
-    mastery: w.mastery as WeaponDef["mastery"],
-    price: "—",
-    desc: "Arma salva na ficha (fora do catálogo atual).",
-  };
-}
-
-export function EquipmentSection({ equipment: eq, mods, scores, prof, cls, race, sub, ac, onChange, onRoll }: Props) {
+export function EquipmentSection({ equipment: eq, mods, scores, prof, cls, race, sub, ac, onChange, onRoll, raging = false, level = 1 }: Props) {
   const [picker, setPicker] = useState<"armor" | "weapon" | "focus" | null>(null);
   const armor = findArmor(eq.armor);
   const focus = findFocus(eq.focus);
@@ -238,6 +216,8 @@ export function EquipmentSection({ equipment: eq, mods, scores, prof, cls, race,
               prof={prof}
               onRoll={onRoll}
               onRemove={a.fromFocus ? undefined : () => set({ weapons: eq.weapons.filter((w) => w.uid !== a.uid) })}
+              raging={raging}
+              level={level}
             />
           ))}
         </ul>
@@ -413,14 +393,20 @@ function AttackRow({
   prof,
   onRoll,
   onRemove,
+  raging = false,
+  level = 1,
 }: {
   attack: Attack;
   prof: number;
   onRoll: Props["onRoll"];
   onRemove?: () => void;
+  raging?: boolean;
+  level?: number;
 }) {
   const w = a.weapon;
   const abilityName = a.ability === "dex" ? "Destreza" : "Força";
+  const ragedDamage = damageWithRage({ damage: a.damage, ranged: w.kind === "distancia" }, raging, level);
+  const ragedDamageTwoHands = a.damageTwoHands ? damageWithRage({ damage: a.damageTwoHands, ranged: w.kind === "distancia" }, raging, level) : undefined;
   return (
     <li className="panel flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
       <div className="min-w-[10rem] flex-1">
@@ -459,17 +445,20 @@ function AttackRow({
         <button
           className="attack-pill"
           disabled={a.damage === "—"}
-          onClick={() => onRoll(`Dano: ${a.label}`, 0, a.damage)}
+          onClick={() => onRoll(`Dano: ${a.label}`, 0, ragedDamage)}
           aria-label={`Rolar dano de ${a.label}`}
         >
           <span className="text-[0.65rem] font-bold uppercase tracking-wide opacity-70">Dano</span>
-          <span className="font-display text-xl font-bold">{a.damage}</span>
+          <span className="font-display text-xl font-bold">{ragedDamage}</span>
         </button>
         {a.damageTwoHands && (
-          <button className="attack-pill" onClick={() => onRoll(`Dano (duas mãos): ${a.label}`, 0, a.damageTwoHands)} aria-label={`Rolar dano com duas mãos de ${a.label}`}>
+          <button className="attack-pill" onClick={() => onRoll(`Dano (duas mãos): ${a.label}`, 0, ragedDamageTwoHands)} aria-label={`Rolar dano com duas mãos de ${a.label}`}>
             <span className="text-[0.65rem] font-bold uppercase tracking-wide opacity-70">2 mãos</span>
-            <span className="font-display text-xl font-bold">{a.damageTwoHands}</span>
+            <span className="font-display text-xl font-bold">{ragedDamageTwoHands}</span>
           </button>
+        )}
+        {raging && w.kind === "corpo" && (
+          <Help title="Bônus de Fúria" paragraphs={[`Em fúria, some +${rageDamageBonus(level)} no dano de ataques corpo a corpo com Força. Já somado acima.`]} />
         )}
         {w.damageType && (
           <Help title={`Dano ${w.damageType}`} label={w.damageType} paragraphs={[DAMAGE_HELP[w.damageType]]}>

@@ -34,6 +34,7 @@ export function TokenTooltip({ token, x, y }: { token: Token; x: number; y: numb
         <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: token.color }} aria-hidden />
         <p className="min-w-0 truncate font-display text-lg font-bold">{token.label}</p>
         {s.size && s.size !== "medio" && <span className="chip shrink-0">{SIZE_LABEL[s.size]}</span>}
+        {s.active_effects?.includes("rage") && <span className="rage-chip shrink-0">🔥 Em fúria</span>}
       </div>
 
       <div className="mt-1.5 flex items-center gap-3 text-sm">

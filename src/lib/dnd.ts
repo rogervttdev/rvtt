@@ -113,6 +113,7 @@ export function normalizeCharacter(row: any): Character {
       },
       inspiration: Boolean(details.inspiration),
       hitDiceSpent: safeNum(details.hitDiceSpent),
+      activeEffects: safeArr<string>(details.activeEffects).filter((f) => typeof f === "string"),
     },
     created_at: row.created_at ?? "",
     updated_at: row.updated_at ?? "",

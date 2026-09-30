@@ -1131,6 +1131,35 @@ body {
   @keyframes save-toast-out {
     to { opacity: 0; transform: translateY(-8px); }
   }
+  /* Badge de Fúria sobre o token no mapa */
+  .rage-badge {
+    position: absolute;
+    top: -0.4rem;
+    right: -0.4rem;
+    display: inline-flex;
+    height: 1.35rem;
+    width: 1.35rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 35% 30%, #ffce8a, #a8431f 60%, #6a2410);
+    box-shadow: 0 0 0 2px #2a1c12, 0 0 8px 2px rgb(216 110 40 / 0.8);
+    font-size: 0.75rem;
+    line-height: 1;
+    animation: turn-pulse 1.2s ease-in-out infinite;
+  }
+  .rage-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid #d8742a;
+    background: rgb(168 67 31 / 0.25);
+    padding: 0.05rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #ffce8a;
+    white-space: nowrap;
+  }
   .panel {
     border: 1px solid var(--color-rule);
     background-color: var(--color-vellum);

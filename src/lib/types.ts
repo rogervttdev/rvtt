@@ -86,6 +86,8 @@ export type CharacterDetails = {
   backgroundFocus: { plus2: AbilityKey | null; plus1: AbilityKey | null };
   inspiration: boolean;
   hitDiceSpent: number;
+  /** Efeitos ativos agora (ex.: "rage"/Fúria), independente de estar numa mesa ou não. */
+  activeEffects: string[];
 };
 
 export type Character = {
@@ -139,7 +141,7 @@ export type Room = {
 
 export type CreatureSize = "minusculo" | "pequeno" | "medio" | "grande" | "enorme" | "imenso";
 
-export type TokenAttack = { name: string; bonus: number; damage: string; type?: string };
+export type TokenAttack = { name: string; bonus: number; damage: string; type?: string; ranged?: boolean };
 
 /** Estado de combate do token: PV, CA, deslocamento, atributos e ataques — mostrado no tooltip. */
 export type TokenStats = {
@@ -159,6 +161,13 @@ export type TokenStats = {
   /** Emoji do item de cenário, para desenhar o quadradinho sem precisar do catálogo */
   icon?: string;
   blocks?: boolean;
+  /** Classe e nível do personagem vinculado (copiados na criação do token), para saber se mostra a Fúria etc. */
+  classKey?: string;
+  level?: number;
+  /** Efeitos ativos agora (ex.: "rage"), visíveis a todos na mesa em tempo real. */
+  active_effects?: string[];
+  /** Usos gastos de Fúria desde o último descanso longo. */
+  furiaUsed?: number;
 };
 
 export type Token = {
@@ -179,6 +188,8 @@ export type RollResult = {
   detail: string;
   total: number;
   crit: "critico" | "falha" | null;
+  /** O que gerou a rolagem (ex.: "Ataque: Espada longa"), opcional — usado na mesa. */
+  label?: string;
 };
 
 export type RollEntry = RollResult & {

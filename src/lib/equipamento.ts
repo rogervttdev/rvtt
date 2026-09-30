@@ -315,6 +315,31 @@ export function weaponProficient(w: WeaponDef, cls?: ClassDef, race?: RaceDef, s
 
 export const EMPTY_EQUIPMENT: Equipment = { armor: null, shield: false, weapons: [], focus: null, acBonus: 0 };
 
+/**
+ * Devolve a arma do catálogo (mais atual e completa) quando o id é reconhecido;
+ * senão, reconstrói uma versão mínima a partir da cópia salva na própria ficha
+ * (nome, dano, tipo, maestria, peso) — assim a arma nunca some da lista, mesmo
+ * que o catálogo mude ou o id não seja mais encontrado.
+ */
+export function resolveEquippedWeapon(w: Equipment["weapons"][number]): WeaponDef | undefined {
+  const fromCatalog = findWeapon(w.id);
+  if (fromCatalog) return fromCatalog;
+  if (!w.name || !w.damage) return undefined;
+  return {
+    id: w.id,
+    name: w.name,
+    category: "simples",
+    kind: "corpo",
+    damage: w.damage,
+    damageType: (w.damageType as WeaponDef["damageType"]) ?? null,
+    props: [],
+    weight: w.weight ?? 0,
+    mastery: w.mastery as WeaponDef["mastery"],
+    price: "—",
+    desc: "Arma salva na ficha (fora do catálogo atual).",
+  };
+}
+
 const fmt = (n: number) => (n >= 0 ? `+${n}` : `−${Math.abs(n)}`);
 
 /** CA automática a partir da armadura, do escudo e da Destreza, com a conta explicada. */

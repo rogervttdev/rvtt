@@ -139,6 +139,10 @@ export function normalizeTokenStats(raw: unknown): TokenStats {
     kind: r.kind,
     icon: r.icon,
     blocks: r.blocks,
+    classKey: r.classKey,
+    level: r.level,
+    active_effects: Array.isArray(r.active_effects) ? r.active_effects.filter((x) => typeof x === "string") : [],
+    furiaUsed: Number(r.furiaUsed ?? 0),
   };
 }
 
