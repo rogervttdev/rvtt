@@ -150,6 +150,7 @@ export function rollFormula(raw: string): RollResult | null {
   let crit: RollResult["crit"] = null;
   let singleD20s = 0;
   const parts: string[] = [];
+  const physicalDice: NonNullable<RollResult["dice"]> = [];
 
   for (const [i, term] of terms.entries()) {
     const negative = term.startsWith("-");
@@ -177,6 +178,7 @@ export function rollFormula(raw: string): RollResult | null {
       const kept = new Set(keptIdx);
       const sum = rolls.reduce((s, v, idx) => (kept.has(idx) ? s + v : s), 0);
       total += sign * sum;
+      for (const [idx, v] of rolls.entries()) physicalDice.push({ sides, value: v, kept: kept.has(idx) });
 
       const keptStr = rolls.filter((_, idx) => kept.has(idx)).join(", ");
       const dropped = rolls.filter((_, idx) => !kept.has(idx));
@@ -200,5 +202,5 @@ export function rollFormula(raw: string): RollResult | null {
   }
 
   if (singleD20s !== 1) crit = null;
-  return { formula: input, detail: parts.join(""), total, crit };
+  return { formula: input, detail: parts.join(""), total, crit, dice: physicalDice };
 }

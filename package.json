@@ -12,7 +12,9 @@
     "@supabase/supabase-js": "^2.117.1",
     "next": "16.3.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-3d-dice": "^0.1.0",
+    "react-dom": "19.3.0",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

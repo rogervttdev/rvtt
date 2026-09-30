@@ -190,6 +190,8 @@ export type RollResult = {
   crit: "critico" | "falha" | null;
   /** O que gerou a rolagem (ex.: "Ataque: Espada longa"), opcional — usado na mesa. */
   label?: string;
+  /** Cada dado físico rolado (para a animação 3D) — inclui os descartados em vantagem/desvantagem. */
+  dice?: { sides: number; value: number; kept: boolean }[];
 };
 
 export type RollEntry = RollResult & {
