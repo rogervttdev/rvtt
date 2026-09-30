@@ -64,7 +64,9 @@
 .mesa-alert { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: #ffd9d1; background: #5a1610; border-bottom: 1px solid #8f2417; }
 
 /* Peças no mapa */
-.mesa-token { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; color: #fbeed3; touch-action: none; }
+.mesa-token { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; color: #fbeed3; touch-action: none; overflow: hidden; }
+.mesa-token-art { width: 100%; height: 100%; pointer-events: none; }
+.mesa-token-art svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .mesa-token-name { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 3px; max-width: 7.5rem; padding: 0 0.4rem; border-radius: 0.3rem; font-family: var(--font-sans); font-size: 0.7rem; font-weight: 800; line-height: 1.35;
   color: #fbeed3; background: rgb(30 19 13 / 0.82); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 .mesa-token.is-turn .mesa-token-name { background: var(--color-brass); color: #2a1c12; }

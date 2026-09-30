@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Help } from "./Help";
+import { SceneryIcon } from "./mesa/SceneryArt";
 import { CR_OPTIONS, MONSTERS, SIZE_LABEL, SIZE_OPTIONS, TYPE_OPTIONS, type MonsterDef } from "@/lib/monstros";
 import { SCENERY, SCENERY_CATEGORY_LABEL, type SceneryCategory, type SceneryDef } from "@/lib/cenario";
 
@@ -272,8 +273,8 @@ function SceneryRow({ item, onAdd }: { item: SceneryDef; onAdd: (qty: number) =>
       onDragStart={(e) => e.dataTransfer.setData("application/x-scenery-id", item.id)}
       className="monster-row"
     >
-      <span className="monster-token text-lg" style={{ background: item.color }} aria-hidden>
-        {item.icon}
+      <span className="scenery-thumb" aria-hidden>
+        <SceneryIcon item={item} className="scenery-thumb-art" />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">

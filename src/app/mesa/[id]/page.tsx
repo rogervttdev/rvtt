@@ -14,7 +14,8 @@ import { TokenTooltip } from "@/components/TokenTooltip";
 import { InitiativeTracker } from "@/components/InitiativeTracker";
 import { DiceOverlay } from "@/components/DiceOverlay";
 import { CharacterSheetModal } from "@/components/CharacterSheetModal";
-import { SCENERY, statsFromScenery, type SceneryDef } from "@/lib/cenario";
+import { SCENERY, findScenery, statsFromScenery, type SceneryDef } from "@/lib/cenario";
+import { SceneryIcon } from "@/components/mesa/SceneryArt";
 import { toggleRageStats } from "@/lib/estados";
 import { characterCombat } from "@/lib/personagem";
 import { TableHud } from "@/components/mesa/TableHud";
@@ -418,6 +419,13 @@ function GameTable() {
       </div>
     );
 
+  /** Ilustração isométrica do cenário (com reserva pro emoji, se o item não tiver arte ainda). */
+  function sceneryArtFor(t: Token) {
+    const def = findScenery(t.stats.sceneryId) ?? (t.stats.icon ? ({ id: "", name: t.label, category: "estruturas", icon: t.stats.icon, color: t.color, size: t.stats.size, blocks: Boolean(t.stats.blocks), desc: "" } as SceneryDef) : null);
+    if (!def) return "❓";
+    return <SceneryIcon item={def} className="mesa-token-art" />;
+  }
+
   const gridLine = "rgb(90 58 36 / 0.32)";
   const bgLayers = [
     `linear-gradient(to right, ${gridLine} 1px, transparent 1px)`,
@@ -533,20 +541,21 @@ function GameTable() {
                       mine ? "cursor-grab active:cursor-grabbing" : "cursor-default"
                     }`}
                     style={{
-                      left: t.x * cell + cell * 0.08,
-                      top: t.y * cell + cell * 0.08,
-                      width: span * cell - cell * 0.16,
-                      height: span * cell - cell * 0.16,
+                      left: t.x * cell + cell * (isScenery ? 0.03 : 0.08),
+                      top: t.y * cell + cell * (isScenery ? 0.03 : 0.08),
+                      width: span * cell - cell * (isScenery ? 0.06 : 0.16),
+                      height: span * cell - cell * (isScenery ? 0.06 : 0.16),
                       fontSize: isScenery ? cell * 0.5 : cell * 0.32,
-                      background: t.color,
-                      border: `${Math.max(2, cell * 0.05)}px solid ${isSel ? "#2a1c12" : "#f6ecd4"}`,
-                      boxShadow: isSel ? "0 0 0 3px rgb(195 154 78 / .8), 0 4px 10px rgb(42 28 18 / .45)" : "0 2px 4px rgb(42 28 18 / .45)",
+                      background: isScenery ? "transparent" : t.color,
+                      border: isScenery ? "none" : `${Math.max(2, cell * 0.05)}px solid ${isSel ? "#2a1c12" : "#f6ecd4"}`,
+                      boxShadow: isSel ? (isScenery ? "0 0 0 3px rgb(195 154 78 / .85)" : "0 0 0 3px rgb(195 154 78 / .8), 0 4px 10px rgb(42 28 18 / .45)") : isScenery ? "none" : "0 2px 4px rgb(42 28 18 / .45)",
+                      borderRadius: isScenery ? "0.4rem" : undefined,
                       transition: draggingId === t.id ? "none" : "left 110ms ease-out, top 110ms ease-out",
                       touchAction: "none",
                       zIndex: isSel ? 12 : isActiveTurn ? 6 : 2,
                     }}
                   >
-                    {isScenery ? t.stats.icon ?? "❓" : initials(t.label)}
+                    {isScenery ? sceneryArtFor(t) : initials(t.label)}
                     {!isScenery && t.stats.active_effects?.includes("rage") && (
                       <span className="rage-badge" aria-hidden title="Em fúria">
                         🔥
