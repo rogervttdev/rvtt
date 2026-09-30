@@ -86,6 +86,8 @@ A mesa foi redesenhada para ser entendida por quem nunca usou uma mesa virtual, 
 
 ## Ficha para iniciantes
 
+- **Abas reorganizadas**: "Visão Geral" (origem, atributos, combate, testes de resistência, perícias, história) e "Equipamento" (armadura, escudo, foco, armas e ataques, manobras, mochila e moedas) — antes tudo isso vivia misturado numa aba só chamada "Ficha". As abas de Magias, Recursos, Ferramentas e Progressão continuam como antes.
+
 - Regras em `src/lib/regras.ts` (raças, sub-raças, classes, antecedentes e perícias do Livro do Jogador) e textos de ajuda em `src/lib/glossario.ts`.
 - O valor digitado em cada atributo é o **valor base**; o bônus da raça é somado automaticamente.
 - Perícias do antecedente e da raça vêm marcadas; as da classe são escolhidas (as sugeridas têm ★).

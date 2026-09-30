@@ -23,7 +23,8 @@ import { ToolsTab } from "@/components/ToolsTab";
 import { RestControls } from "@/components/RestControls";
 
 const TABS = [
-  { id: "ficha", label: "Ficha" },
+  { id: "geral", label: "Visão Geral" },
+  { id: "equipamento", label: "Equipamento" },
   { id: "magias", label: "Magias" },
   { id: "recursos", label: "Recursos" },
   { id: "ferramentas", label: "Ferramentas" },
@@ -84,7 +85,7 @@ export function CharacterSheet({
   const [savedToast, setSavedToast] = useState(false);
   const [roll, setRoll] = useState<RollToast | null>(null);
   const rollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [tab, setTab] = useState<Tab>("ficha");
+  const [tab, setTab] = useState<Tab>("geral");
 
   useEffect(() => {
     const h = window.location.hash.slice(1) as Tab;
@@ -93,7 +94,7 @@ export function CharacterSheet({
 
   function changeTab(next: Tab) {
     setTab(next);
-    history.replaceState(null, "", next === "ficha" ? window.location.pathname : `#${next}`);
+    history.replaceState(null, "", next === "geral" ? window.location.pathname : `#${next}`);
   }
 
   useEffect(() => {
@@ -487,7 +488,7 @@ export function CharacterSheet({
         />
       )}
 
-      {tab === "ficha" && (
+      {tab === "geral" && (
       <>
       {/* ---------- Origem ---------- */}
       <section id="origem" className="mt-10 scroll-mt-20">
@@ -995,6 +996,11 @@ export function CharacterSheet({
         </div>
       </section>
 
+      </>
+      )}
+
+      {tab === "equipamento" && (
+      <>
       <EquipmentSection
         equipment={char.equipment}
         mods={mods}
@@ -1009,7 +1015,11 @@ export function CharacterSheet({
         raging={d.activeEffects.includes("rage")}
         level={char.level}
       />
+      </>
+      )}
 
+      {tab === "geral" && (
+      <>
       {/* ---------- Testes de resistência ---------- */}
       <section className="mt-10">
         <div className="flex items-center gap-2">
@@ -1120,6 +1130,11 @@ export function CharacterSheet({
         <p className="mt-2 text-sm text-dim">★ sugerida para a sua classe · as etiquetas mostram perícias que vêm prontas.</p>
       </section>
 
+      </>
+      )}
+
+      {tab === "equipamento" && (
+      <>
       <BackpackSection
         inventory={char.inventory}
         coins={char.coins}
@@ -1128,7 +1143,11 @@ export function CharacterSheet({
         onInventory={(inventory) => patch({ inventory })}
         onCoins={(coins) => patch({ coins })}
       />
+      </>
+      )}
 
+      {tab === "geral" && (
+      <>
       <section className="mt-10">
         <label htmlFor="notas" className="font-display text-2xl font-bold">
           História e anotações
