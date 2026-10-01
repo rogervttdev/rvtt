@@ -119,6 +119,7 @@
 .mesa-roll-btn:hover { filter: brightness(1.1); }
 .mesa-roll-btn:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 0 #5c1f0a; }
 .mesa-roll-btn.is-dmg { background: linear-gradient(to bottom, #6b6b78, #45454f); border-color: #25252c; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 3px 0 #25252c; }
+.mesa-roll-btn.is-crit { background: linear-gradient(to bottom, #6b9a4a, #3f6b2a); border-color: #234015; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 3px 0 #234015; }
 .mesa-roll-tag { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
 .mesa-roll-val { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; line-height: 1.1; }
 
@@ -129,6 +130,19 @@
 .mesa-pips { display: flex; gap: 0.25rem; margin-top: 0.15rem; }
 .mesa-pip { height: 0.7rem; width: 0.7rem; border-radius: 9999px; background: currentColor; opacity: 0.95; }
 .mesa-pip.is-spent { background: transparent; border: 2px solid currentColor; opacity: 0.55; }
+
+/* Testes de resistência contra a morte */
+.mesa-death { margin-top: 0.6rem; padding: 0.6rem 0.7rem; border-radius: 0.65rem; border: 1px solid #b89a63; background: rgb(143 36 23 / 0.08); }
+.mesa-death-pips { display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; font-weight: 700; }
+.mesa-death-label { margin-right: 0.15rem; color: var(--color-dim); font-weight: 800; text-transform: uppercase; font-size: 0.62rem; }
+.mesa-pip.is-success { color: var(--color-moss); }
+.mesa-pip.is-fail { color: var(--color-blood); }
+
+/* Condições (SRD 5.2.1) */
+.mesa-condition { display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.5rem; border-radius: 0.5rem; border: 1px solid #d3bd90; background: rgb(255 255 255 / 0.4); font-size: 0.82rem; cursor: pointer; }
+.mesa-condition input { accent-color: var(--color-ember); }
+.mesa-condition.is-on { border-color: var(--color-ember); background: rgb(168 67 31 / 0.15); font-weight: 700; }
+.mesa-condition.is-exhaustion { margin-top: 0.4rem; cursor: default; }
 
 /* Dados */
 .mesa-log { display: flex; flex-direction: column; gap: 0.4rem; max-height: 22rem; overflow-y: auto; }

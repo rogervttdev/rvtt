@@ -17,6 +17,7 @@ import { CharacterSheetModal } from "@/components/CharacterSheetModal";
 import { SCENERY, findScenery, statsFromScenery, type SceneryDef } from "@/lib/cenario";
 import { SceneryIcon } from "@/components/mesa/SceneryArt";
 import { toggleRageStats } from "@/lib/estados";
+import { findCondition } from "@/lib/condicoes";
 import { characterCombat } from "@/lib/personagem";
 import { TableHud } from "@/components/mesa/TableHud";
 import { Dock, type DockAction } from "@/components/mesa/Dock";
@@ -559,6 +560,17 @@ function GameTable() {
                     {!isScenery && t.stats.active_effects?.includes("rage") && (
                       <span className="rage-badge" aria-hidden title="Em fúria">
                         🔥
+                      </span>
+                    )}
+                    {!isScenery && (t.stats.conditions?.length ?? 0) > 0 && (
+                      <span className="condition-badge" aria-hidden title={t.stats.conditions!.map((id) => findCondition(id)?.name ?? id).join(", ")}>
+                        {findCondition(t.stats.conditions![0])?.icon ?? "❔"}
+                        {t.stats.conditions!.length > 1 && <span className="condition-badge-count">+{t.stats.conditions!.length - 1}</span>}
+                      </span>
+                    )}
+                    {!isScenery && (t.stats.exhaustion ?? 0) > 0 && (
+                      <span className="exhaustion-badge" aria-hidden title={`Exausto (nível ${t.stats.exhaustion})`}>
+                        {t.stats.exhaustion}
                       </span>
                     )}
                     {!isScenery && hpPct < 100 && (

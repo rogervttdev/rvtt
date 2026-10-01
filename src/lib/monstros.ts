@@ -143,6 +143,13 @@ export function normalizeTokenStats(raw: unknown): TokenStats {
     level: r.level,
     active_effects: Array.isArray(r.active_effects) ? r.active_effects.filter((x) => typeof x === "string") : [],
     furiaUsed: Number(r.furiaUsed ?? 0),
+    conditions: Array.isArray(r.conditions) ? r.conditions.filter((x) => typeof x === "string") : [],
+    exhaustion: Math.max(0, Math.min(6, Number(r.exhaustion ?? 0))),
+    deathSaves: {
+      success: Math.max(0, Math.min(3, Number((r.deathSaves as Record<string, unknown>)?.success ?? 0))),
+      fail: Math.max(0, Math.min(3, Number((r.deathSaves as Record<string, unknown>)?.fail ?? 0))),
+      stable: Boolean((r.deathSaves as Record<string, unknown>)?.stable),
+    },
   };
 }
 

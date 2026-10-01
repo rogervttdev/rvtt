@@ -114,6 +114,13 @@ export function normalizeCharacter(row: any): Character {
       inspiration: Boolean(details.inspiration),
       hitDiceSpent: safeNum(details.hitDiceSpent),
       activeEffects: safeArr<string>(details.activeEffects).filter((f) => typeof f === "string"),
+      conditions: safeArr<string>(details.conditions).filter((f) => typeof f === "string"),
+      exhaustion: Math.max(0, Math.min(6, safeNum(details.exhaustion))),
+      deathSaves: {
+        success: Math.max(0, Math.min(3, safeNum(safeObj(details.deathSaves).success))),
+        fail: Math.max(0, Math.min(3, safeNum(safeObj(details.deathSaves).fail))),
+        stable: Boolean(safeObj(details.deathSaves).stable),
+      },
     },
     created_at: row.created_at ?? "",
     updated_at: row.updated_at ?? "",
@@ -139,6 +146,15 @@ const DICE_TERM = /^(\d*)d(\d+)(?:(kh|kl)(\d+))?$/;
  * Aceita fórmulas como: 1d20+5, 2d6+1d4-1, d8, 2d20kh1 (vantagem), 2d20kl1 (desvantagem), 4d6kh3.
  * Retorna null se a fórmula for inválida.
  */
+/**
+ * Dobra os dados de uma fórmula de dano para um Acerto Crítico (regra do SRD:
+ * rola todos os dados de dano duas vezes e soma; o modificador fixo entra só uma vez).
+ * "1d8+3" vira "2d8+3"; "2d6+1d4+2" vira "4d6+2d4+2".
+ */
+export function critFormula(formula: string): string {
+  return formula.replace(/(\d*)d(\d+)/gi, (_, count, sides) => `${(Number(count) || 1) * 2}d${sides}`);
+}
+
 export function rollFormula(raw: string): RollResult | null {
   const input = raw.toLowerCase().replace(/\s+/g, "");
   if (!input || !/^[+-]?[0-9dkhl+-]+$/.test(input)) return null;

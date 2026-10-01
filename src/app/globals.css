@@ -1204,6 +1204,54 @@ body {
     line-height: 1;
     animation: turn-pulse 1.2s ease-in-out infinite;
   }
+  .condition-badge {
+    position: absolute;
+    top: -0.4rem;
+    left: -0.4rem;
+    display: inline-flex;
+    height: 1.35rem;
+    width: 1.35rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 35% 30%, #e6d2a8, #6a4a24 60%, #3a2a14);
+    box-shadow: 0 0 0 2px #2a1c12;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+  .condition-badge-count {
+    position: absolute;
+    bottom: -0.3rem;
+    right: -0.3rem;
+    display: inline-flex;
+    height: 0.9rem;
+    min-width: 0.9rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: #2a1c12;
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: #f6ecd4;
+    padding: 0 0.1rem;
+  }
+  .exhaustion-badge {
+    position: absolute;
+    bottom: -0.4rem;
+    right: -0.4rem;
+    display: inline-flex;
+    height: 1.2rem;
+    width: 1.2rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 35% 30%, #d99a8c, #8f2417 60%, #5a1610);
+    box-shadow: 0 0 0 2px #2a1c12;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+  }
   .rage-chip {
     display: inline-flex;
     align-items: center;

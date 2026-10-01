@@ -88,6 +88,12 @@ export type CharacterDetails = {
   hitDiceSpent: number;
   /** Efeitos ativos agora (ex.: "rage"/Fúria), independente de estar numa mesa ou não. */
   activeEffects: string[];
+  /** Condições do SRD 5.2.1 afetando o personagem agora (ex.: "caido", "envenenado"). */
+  conditions: string[];
+  /** Nível de Exaustão (0–6; 6 = morte). */
+  exhaustion: number;
+  /** Testes de resistência contra a morte, feitos a cada turno com 0 PV. */
+  deathSaves: { success: number; fail: number; stable: boolean };
 };
 
 export type Character = {
@@ -168,6 +174,12 @@ export type TokenStats = {
   active_effects?: string[];
   /** Usos gastos de Fúria desde o último descanso longo. */
   furiaUsed?: number;
+  /** Condições do SRD 5.2.1 afetando a criatura agora (ex.: "caido", "envenenado"). */
+  conditions?: string[];
+  /** Nível de Exaustão (0–6; 6 = morte). */
+  exhaustion?: number;
+  /** Testes de resistência contra a morte, feitos a cada turno com 0 PV. */
+  deathSaves?: { success: number; fail: number; stable: boolean };
 };
 
 export type Token = {

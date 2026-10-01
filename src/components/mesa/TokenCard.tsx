@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { critFormula, rollFormula } from "@/lib/dnd";
 import { rageDamageBonus, rageUsesMax, RAGING_CLASSES, damageWithRage } from "@/lib/estados";
-import type { Token } from "@/lib/types";
+import { CONDITIONS } from "@/lib/condicoes";
+import type { Token, TokenStats } from "@/lib/types";
 
 type Props = {
   token: Token;
@@ -66,6 +69,10 @@ export function TokenCard({ token: t, canControl, ownerId, userId, onUpdateStats
             </div>
           </div>
 
+          {t.stats.hp_current === 0 && (
+            <DeathSaves stats={t.stats} canControl={canControl} onUpdateStats={(patch) => onUpdateStats(t, patch)} />
+          )}
+
           <div className="mesa-stats">
             <div className="mesa-stat">
               <span className="mesa-stat-icon" aria-hidden>
@@ -114,6 +121,8 @@ export function TokenCard({ token: t, canControl, ownerId, userId, onUpdateStats
               </div>
             </details>
           )}
+
+          <ConditionsBox stats={t.stats} canControl={canControl} onUpdateStats={(patch) => onUpdateStats(t, patch)} />
         </>
       )}
 
@@ -142,6 +151,14 @@ export function TokenCard({ token: t, canControl, ownerId, userId, onUpdateStats
                   <button className="mesa-roll-btn is-dmg" onClick={() => onRoll(`Dano: ${a.name} (${t.label})`, damage)}>
                     <span className="mesa-roll-tag">Dano</span>
                     <span className="mesa-roll-val">{damage}</span>
+                  </button>
+                  <button
+                    className="mesa-roll-btn is-crit"
+                    title="Acerto crítico: dobra os dados de dano"
+                    onClick={() => onRoll(`Dano crítico: ${a.name} (${t.label})`, critFormula(damage))}
+                  >
+                    <span className="mesa-roll-tag">Crítico</span>
+                    <span className="mesa-roll-val">{critFormula(damage)}</span>
                   </button>
                 </div>
               );
@@ -200,6 +217,121 @@ export function TokenCard({ token: t, canControl, ownerId, userId, onUpdateStats
         )}
       </div>
       {t.owner_id === ownerId && t.owner_id !== userId && <p className="mt-1 text-xs text-dim">Peça do mestre.</p>}
+    </div>
+  );
+}
+
+/**
+ * Testes de resistência contra a morte (SRD 5.2.1): aparece sozinho quando os PV
+ * chegam a 0. 3 sucessos estabiliza; 3 falhas mata; um 20 natural recupera 1 PV;
+ * um 1 natural conta como duas falhas.
+ */
+function DeathSaves({ stats, canControl, onUpdateStats }: { stats: TokenStats; canControl: boolean; onUpdateStats: (patch: Partial<TokenStats>) => void }) {
+  const ds = stats.deathSaves ?? { success: 0, fail: 0, stable: false };
+  const dead = ds.fail >= 3;
+
+  function roll() {
+    const r = rollFormula("1d20");
+    if (!r) return;
+    const nat = r.total;
+    if (nat === 20) return onUpdateStats({ hp_current: 1, deathSaves: { success: 0, fail: 0, stable: false } });
+    if (nat === 1) return onUpdateStats({ deathSaves: { ...ds, fail: Math.min(3, ds.fail + 2) } });
+    if (nat >= 10) {
+      const success = Math.min(3, ds.success + 1);
+      return onUpdateStats({ deathSaves: { success, fail: ds.fail, stable: success >= 3 } });
+    }
+    return onUpdateStats({ deathSaves: { ...ds, fail: Math.min(3, ds.fail + 1) } });
+  }
+
+  return (
+    <div className="mesa-death">
+      <p className="mesa-label !mb-1">☠️ Teste de resistência contra a morte</p>
+      {dead ? (
+        <p className="font-display text-lg font-bold text-blood">Morto.</p>
+      ) : ds.stable ? (
+        <p className="font-display text-lg font-bold text-moss">Estável (inconsciente, sem precisar mais rolar).</p>
+      ) : (
+        <>
+          <div className="flex items-center gap-4">
+            <span className="mesa-death-pips">
+              <span className="mesa-death-label">Sucessos</span>
+              {[0, 1, 2].map((i) => (
+                <span key={i} className={`mesa-pip is-success ${i < ds.success ? "is-spent" : ""}`} />
+              ))}
+            </span>
+            <span className="mesa-death-pips">
+              <span className="mesa-death-label">Falhas</span>
+              {[0, 1, 2].map((i) => (
+                <span key={i} className={`mesa-pip is-fail ${i < ds.fail ? "is-spent" : ""}`} />
+              ))}
+            </span>
+          </div>
+          {canControl && (
+            <button className="btn btn-danger mt-2 w-full text-sm" onClick={roll}>
+              🎲 Rolar 1d20
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Condições do SRD 5.2.1 afetando a peça agora, com toggle e explicação de cada uma. */
+function ConditionsBox({ stats, canControl, onUpdateStats }: { stats: TokenStats; canControl: boolean; onUpdateStats: (patch: Partial<TokenStats>) => void }) {
+  const [open, setOpen] = useState(false);
+  const active = stats.conditions ?? [];
+  const exhaustion = stats.exhaustion ?? 0;
+
+  function toggle(id: string) {
+    const next = active.includes(id) ? active.filter((c) => c !== id) : [...active, id];
+    onUpdateStats({ conditions: next });
+  }
+
+  return (
+    <div className="mt-3 border-t border-rule pt-2">
+      <button className="mesa-label !mb-1 flex w-full items-center gap-1.5" onClick={() => setOpen((v) => !v)}>
+        🩹 Condições {active.length > 0 && <span className="chip">{active.length}</span>}
+        {exhaustion > 0 && <span className="chip !border-blood !text-blood">Exausto {exhaustion}</span>}
+        <span className="ml-auto text-dim">{open ? "▲" : "▼"}</span>
+      </button>
+      {active.length > 0 && !open && (
+        <p className="mt-1 flex flex-wrap gap-1">
+          {active.map((id) => {
+            const c = CONDITIONS.find((x) => x.id === id);
+            return c ? (
+              <span key={id} className="chip" title={c.desc}>
+                {c.icon} {c.name}
+              </span>
+            ) : null;
+          })}
+        </p>
+      )}
+      {open && (
+        <div className="mt-2 space-y-2">
+          <div className="grid grid-cols-2 gap-1.5">
+            {CONDITIONS.map((c) => (
+              <label key={c.id} className={`mesa-condition ${active.includes(c.id) ? "is-on" : ""}`} title={c.desc}>
+                <input type="checkbox" checked={active.includes(c.id)} disabled={!canControl} onChange={() => toggle(c.id)} />
+                <span aria-hidden>{c.icon}</span>
+                <span className="truncate">{c.name}</span>
+              </label>
+            ))}
+          </div>
+          <label className="mesa-condition is-exhaustion">
+            <span aria-hidden>🥵</span>
+            <span className="flex-1">Exaustão</span>
+            <select className="field w-auto px-1.5 py-0.5 text-sm" value={exhaustion} disabled={!canControl} onChange={(e) => onUpdateStats({ exhaustion: Number(e.target.value) })}>
+              {[0, 1, 2, 3, 4, 5, 6].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="mesa-hint">Cada nível de Exaustão dá −2 em todos os testes de d20 e −3 m de deslocamento. Nível 6 é morte. Um descanso longo remove 1 nível.</p>
+        </div>
+      )}
     </div>
   );
 }

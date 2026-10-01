@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Help, HelpCalc } from "./Help";
 import { damageWithRage, rageDamageBonus } from "@/lib/estados";
 import { Picker } from "./Picker";
-import { formatMod, uid } from "@/lib/dnd";
+import { critFormula, formatMod, uid } from "@/lib/dnd";
 import { GLOSSARIO } from "@/lib/glossario";
 import {
   ARMORS,
@@ -451,6 +451,17 @@ function AttackRow({
           <span className="text-[0.65rem] font-bold uppercase tracking-wide opacity-70">Dano</span>
           <span className="font-display text-xl font-bold">{ragedDamage}</span>
         </button>
+        {a.damage !== "—" && (
+          <button
+            className="attack-pill !border-moss !bg-moss/15"
+            onClick={() => onRoll(`Dano crítico: ${a.label}`, 0, critFormula(ragedDamage))}
+            aria-label={`Rolar dano crítico de ${a.label}`}
+            title="Acerto crítico: dobra os dados de dano"
+          >
+            <span className="text-[0.65rem] font-bold uppercase tracking-wide opacity-70">Crítico</span>
+            <span className="font-display text-xl font-bold">{critFormula(ragedDamage)}</span>
+          </button>
+        )}
         {a.damageTwoHands && (
           <button className="attack-pill" onClick={() => onRoll(`Dano (duas mãos): ${a.label}`, 0, ragedDamageTwoHands)} aria-label={`Rolar dano com duas mãos de ${a.label}`}>
             <span className="text-[0.65rem] font-bold uppercase tracking-wide opacity-70">2 mãos</span>

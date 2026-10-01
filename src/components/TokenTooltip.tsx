@@ -2,6 +2,7 @@
 
 import { SIZE_LABEL } from "@/lib/monstros";
 import { findScenery } from "@/lib/cenario";
+import { CONDITIONS } from "@/lib/condicoes";
 import { SceneryIcon } from "./mesa/SceneryArt";
 import type { Token } from "@/lib/types";
 
@@ -38,7 +39,21 @@ export function TokenTooltip({ token, x, y }: { token: Token; x: number; y: numb
         <p className="min-w-0 truncate font-display text-lg font-bold">{token.label}</p>
         {s.size && s.size !== "medio" && <span className="chip shrink-0">{SIZE_LABEL[s.size]}</span>}
         {s.active_effects?.includes("rage") && <span className="rage-chip shrink-0">🔥 Em fúria</span>}
+        {(s.exhaustion ?? 0) > 0 && <span className="rage-chip shrink-0">🥵 Exausto {s.exhaustion}</span>}
       </div>
+
+      {(s.conditions?.length ?? 0) > 0 && (
+        <p className="mt-1 flex flex-wrap gap-1">
+          {s.conditions!.map((id) => {
+            const c = CONDITIONS.find((x) => x.id === id);
+            return c ? (
+              <span key={id} className="chip">
+                {c.icon} {c.name}
+              </span>
+            ) : null;
+          })}
+        </p>
+      )}
 
       <div className="mt-1.5 flex items-center gap-3 text-sm">
         <span className="flex items-center gap-1" title="Classe de Armadura">

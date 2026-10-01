@@ -21,6 +21,8 @@ import { SpellsTab } from "@/components/SpellsTab";
 import { ResourcesTab } from "@/components/ResourcesTab";
 import { ToolsTab } from "@/components/ToolsTab";
 import { RestControls } from "@/components/RestControls";
+import { CONDITIONS } from "@/lib/condicoes";
+import "@/components/mesa/mesa.css";
 
 const TABS = [
   { id: "geral", label: "Visão Geral" },
@@ -994,6 +996,89 @@ export function CharacterSheet({
             </button>
           </StatBox>
         </div>
+      </section>
+
+      {/* ---------- Condições e estado (SRD 5.2.1) ---------- */}
+      <section className="mt-10">
+        <h2 className="flex items-center gap-2 font-display text-2xl font-bold">
+          🩹 Condições e estado
+          <Help
+            title="Condições"
+            paragraphs={["As 15 condições do SRD 5.2.1 (Cego, Caído, Envenenado etc.) e o nível de Exaustão. Marque o que estiver afetando seu personagem agora — some sozinho na hora de lembrar as regras, mas não muda os números da ficha automaticamente."]}
+          />
+        </h2>
+        {char.hp_current === 0 && (
+          <div className="mesa-death mt-3">
+            <p className="mesa-label !mb-1">☠️ Teste de resistência contra a morte</p>
+            {(d.deathSaves?.fail ?? 0) >= 3 ? (
+              <p className="font-display text-lg font-bold text-blood">Morto.</p>
+            ) : d.deathSaves?.stable ? (
+              <p className="font-display text-lg font-bold text-moss">Estável (inconsciente, sem precisar mais rolar).</p>
+            ) : (
+              <>
+                <div className="flex items-center gap-4">
+                  <span className="mesa-death-pips">
+                    <span className="mesa-death-label">Sucessos</span>
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} className={`mesa-pip is-success ${i < (d.deathSaves?.success ?? 0) ? "is-spent" : ""}`} />
+                    ))}
+                  </span>
+                  <span className="mesa-death-pips">
+                    <span className="mesa-death-label">Falhas</span>
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} className={`mesa-pip is-fail ${i < (d.deathSaves?.fail ?? 0) ? "is-spent" : ""}`} />
+                    ))}
+                  </span>
+                </div>
+                <button
+                  className="btn btn-danger mt-2 w-full text-sm"
+                  onClick={() => {
+                    const r = rollFormula("1d20");
+                    if (!r) return;
+                    const ds = d.deathSaves ?? { success: 0, fail: 0, stable: false };
+                    if (r.total === 20) return patchDetails({ deathSaves: { success: 0, fail: 0, stable: false } }), patch({ hp_current: 1 });
+                    if (r.total === 1) return patchDetails({ deathSaves: { ...ds, fail: Math.min(3, ds.fail + 2) } });
+                    if (r.total >= 10) {
+                      const success = Math.min(3, ds.success + 1);
+                      return patchDetails({ deathSaves: { success, fail: ds.fail, stable: success >= 3 } });
+                    }
+                    return patchDetails({ deathSaves: { ...ds, fail: Math.min(3, ds.fail + 1) } });
+                  }}
+                >
+                  🎲 Rolar 1d20
+                </button>
+              </>
+            )}
+          </div>
+        )}
+        <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5">
+          {CONDITIONS.map((c) => {
+            const on = d.conditions.includes(c.id);
+            return (
+              <label key={c.id} className={`mesa-condition ${on ? "is-on" : ""}`} title={c.desc}>
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={() => patchDetails({ conditions: on ? d.conditions.filter((x) => x !== c.id) : [...d.conditions, c.id] })}
+                />
+                <span aria-hidden>{c.icon}</span>
+                <span className="truncate">{c.name}</span>
+              </label>
+            );
+          })}
+        </div>
+        <label className="mesa-condition is-exhaustion mt-2 max-w-xs">
+          <span aria-hidden>🥵</span>
+          <span className="flex-1">Nível de Exaustão</span>
+          <select className="field w-auto px-1.5 py-0.5 text-sm" value={d.exhaustion} onChange={(e) => patchDetails({ exhaustion: Number(e.target.value) })}>
+            {[0, 1, 2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="mt-1 text-sm text-dim">Cada nível de Exaustão dá −2 em todos os testes de d20 e −3 m de deslocamento. Nível 6 é morte. Um descanso longo remove 1 nível.</p>
       </section>
 
       </>
