@@ -75,6 +75,10 @@ A mesa foi redesenhada para ser entendida por quem nunca usou uma mesa virtual, 
 - Cada peça no mapa agora mostra o **nome embaixo** (quando o zoom permite), além do PV e do selo de Fúria — sem precisar passar o mouse para saber quem é quem.
 - Nada mudou na parte de dados: o hook `src/lib/mesa-canal.ts` concentra a conexão Realtime (Broadcast + Presence) num só lugar, usado pela página da mesa.
 
+## Página inicial: a cena da mesa
+
+A entrada do site (`src/app/page.tsx`) agora abre com uma ilustração própria (`src/components/landing/TavernScene.tsx`) — quatro aventureiros bem diferentes entre si (bárbaro, maga, arqueira élfica, clériga), sentados à mesa redonda de uma taverna, com mapa, dados, canecas e vela. É tudo desenhado em SVG puro (sem fotos nem imagens externas), no mesmo estilo "chapado com sombra" já usado no resto do app — reforça a ideia por trás do nome "Taverna Inicial": aqui você senta à mesa sendo quem quiser ser.
+
 ## SRD 5.2.1: Condições, Testes de Morte, Exaustão, Crítico e tradução total
 
 - **As 15 condições oficiais** (`src/lib/condicoes.ts`), extraídas e traduzidas diretamente do glossário do SRD 5.2.1: Cego, Surdo, Enfeitiçado, Amedrontado, Agarrado, Incapacitado, Invisível, Paralisado, Petrificado, Envenenado, Caído, Contido, Atordoado, Inconsciente e Exausto. Marque/desmarque no token (mesa) ou na ficha — some sozinho num selo visível sobre o token no mapa, em tempo real para todos.

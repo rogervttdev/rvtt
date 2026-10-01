@@ -5,6 +5,7 @@ import { useSession } from "@/components/SessionProvider";
 import { AuthForm } from "@/components/AuthForm";
 import { ConfigWarning } from "@/components/ConfigWarning";
 import { TavernLogo } from "@/components/Logo";
+import { TavernScene } from "@/components/landing/TavernScene";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 const STEPS = [
@@ -38,7 +39,14 @@ export default function Home() {
     <div>
       {/* ---------- Entrada da taverna ---------- */}
       <section className="tavern-wood border-b-4 border-brass-deep">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-[1.15fr_1fr] md:items-center md:py-24">
+        <div className="mx-auto max-w-6xl px-4 pt-10 sm:pt-14">
+          <TavernScene className="w-full rounded-2xl shadow-[0_20px_50px_-12px_rgb(0_0_0/0.7)] ring-1 ring-brass-deep/70" />
+          <p className="mt-3 text-center font-display text-sm italic text-brass-light/80 sm:text-base">
+            Na Taverna Inicial, todo mundo senta à mesa sendo quem sempre quis ser.
+          </p>
+        </div>
+
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-10 md:grid-cols-[1.15fr_1fr] md:items-center md:pb-24">
           <div>
             <div className="flex items-center gap-4">
               <TavernLogo
