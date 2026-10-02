@@ -75,9 +75,9 @@ A mesa foi redesenhada para ser entendida por quem nunca usou uma mesa virtual, 
 - Cada peça no mapa agora mostra o **nome embaixo** (quando o zoom permite), além do PV e do selo de Fúria — sem precisar passar o mouse para saber quem é quem.
 - Nada mudou na parte de dados: o hook `src/lib/mesa-canal.ts` concentra a conexão Realtime (Broadcast + Presence) num só lugar, usado pela página da mesa.
 
-## Página inicial: clima de mesa de RPG
+## Página inicial
 
-A entrada do site (`src/app/page.tsx`) ganhou uma composição mais cenográfica, sem personagens desenhados: duas tochas com chama tremeluzente (`src/components/landing/Torch.tsx`) ladeando a logo, um **d20 grande** que gira e pulsa um brilho âmbar devagar (`src/components/landing/HeroDie.tsx`), e o formulário de entrada dentro de um "pergaminho" com borda rasgada (recorte via `clip-path`) e um selo de cera no canto. Os três passos de "Como funciona" viraram avisos de mural, levemente tortos e presos por um pino. Tudo em CSS/SVG puro, sem imagens externas, na mesma paleta de madeira/latão/pergaminho do resto do app.
+A entrada do site (`src/app/page.tsx`) é o layout clássico de duas colunas — logo, título e texto de boas-vindas à esquerda, formulário de entrada à direita, dentro de um cartão de pergaminho envelhecido (`.parchment-card`, já usado em outras partes do app). Sem ilustração nem personagens desenhados: a pegada de RPG vem da textura de madeira no fundo, da tipografia e da paleta de latão/pergaminho, como no resto do app. Abaixo, os três passos de "Como funciona" e o pequeno dicionário de termos.
 
 ## SRD 5.2.1: Condições, Testes de Morte, Exaustão, Crítico e tradução total
 
