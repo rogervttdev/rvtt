@@ -59,6 +59,14 @@
 .mesa-zoom-btn { display: inline-flex; height: 2.1rem; min-width: 2.1rem; align-items: center; justify-content: center; padding: 0 0.5rem; border-radius: 0.5rem; font-weight: 800; font-size: 1.05rem; cursor: pointer; }
 .mesa-zoom-btn:hover { background: rgb(195 154 78 / 0.3); }
 .mesa-zoom-label { min-width: 3rem; text-align: center; font-size: 0.8rem; font-weight: 700; opacity: 0.85; }
+
+.board3d-canvas { position: absolute; inset: 0; touch-action: none; }
+.board3d-canvas canvas { display: block; outline: none; }
+
+.mesa-view-toggle { position: absolute; right: 1rem; bottom: 1rem; z-index: 20; display: flex; gap: 0.15rem; padding: 0.25rem; border-radius: 0.7rem; background: rgb(30 19 13 / 0.92); border: 1px solid var(--color-brass-deep); box-shadow: 0 6px 16px -6px rgb(0 0 0 / 0.8); }
+.mesa-view-btn { padding: 0.4rem 0.7rem; border-radius: 0.5rem; font-size: 0.82rem; font-weight: 800; color: var(--color-foam); cursor: pointer; }
+.mesa-view-btn:hover { background: rgb(195 154 78 / 0.2); }
+.mesa-view-btn.is-active { background: linear-gradient(to bottom, rgb(195 154 78 / 0.5), rgb(195 154 78 / 0.25)); color: var(--color-brass-light); }
 .mesa-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; pointer-events: none; }
 .mesa-empty-card { max-width: 24rem; text-align: center; padding: 1.1rem 1.3rem; border-radius: 0.8rem; color: var(--color-ink); background: rgb(246 236 212 / 0.93); border: 1px dashed var(--color-brass-deep); box-shadow: 0 10px 26px -10px rgb(0 0 0 / 0.6); }
 .mesa-alert { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: #ffd9d1; background: #5a1610; border-bottom: 1px solid #8f2417; }

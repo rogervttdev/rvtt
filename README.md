@@ -63,6 +63,18 @@ Cada mesa usa o canal `room:<id>`:
 
 Permissões: cada jogador move/remove os próprios tokens; o mestre (dono da mesa) move/remove qualquer um e altera a configuração.
 
+## Tabuleiro em 3D de verdade
+
+O mapa tem um botão **"2D / 3D"** no canto do palco. O 2D continua sendo o modo padrão (mais leve, com arrastar-e-soltar do bestiário/cenário direto do catálogo); o 3D (`src/components/mesa/Board3D.tsx`) usa **React Three Fiber** (a camada React do Three.js — a mesma tecnologia do dado físico) pra desenhar:
+
+- A mesa com profundidade de verdade: câmera em ângulo, base de madeira com volume, grade sobre o tabuleiro, zoom e giro de câmera (arrastar com o botão direito/dois dedos gira; a roda/pinça faz zoom, dentro de limites pra não perder o tabuleiro de vista).
+- **Tokens como cilindros 3D de verdade**, com anel dourado de seleção, anel de "é a vez dele" na iniciativa, barra de vida e as iniciais sempre viradas pra câmera (billboard).
+- **Cenário com geometria 3D real** por categoria: árvores (cone + tronco), rochas/montanhas (poliedro), fogueiras e tochas com luz própria piscando, móveis e paredes como blocos, perigos como discos no chão.
+- As **mesmas funções** de selecionar, arrastar, mover por teclado (setas, com o token selecionado) e sincronizar em tempo real do modo 2D — só a parte visual muda, então trocar de 2D pra 3D a qualquer momento nunca perde nada.
+- Nenhuma dependência de rede: o texto das etiquetas é desenhado num canvas local (`useLabelTexture`), não baixado de fonte externa — isso evitava um erro real que encontrei e corrigi durante os testes.
+
+**Limitação conhecida:** no modo 3D, arrastar uma carta do bestiário/cenário direto pro mapa não funciona (só o botão "Colocar") — é uma limitação de como o arrastar-e-soltar do navegador conversa com uma tela WebGL. No 2D as duas formas continuam funcionando.
+
 ## Visual da mesa (HUD, dock e painel por abas)
 
 A mesa foi redesenhada para ser entendida por quem nunca usou uma mesa virtual, sem perder nada do que já funcionava:

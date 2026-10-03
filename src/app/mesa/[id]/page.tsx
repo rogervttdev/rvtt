@@ -19,6 +19,7 @@ import { SceneryIcon } from "@/components/mesa/SceneryArt";
 import { toggleRageStats } from "@/lib/estados";
 import { findCondition } from "@/lib/condicoes";
 import { characterCombat } from "@/lib/personagem";
+import { Board3D } from "@/components/mesa/Board3D";
 import { TableHud } from "@/components/mesa/TableHud";
 import { Dock, type DockAction } from "@/components/mesa/Dock";
 import { StageControls } from "@/components/mesa/StageControls";
@@ -51,6 +52,7 @@ function GameTable() {
   const [myChars, setMyChars] = useState<CharOption[]>([]);
   const [rolls, setRolls] = useState<RollEntry[]>([]);
   const [cell, setCell] = useState(50); // 50px por quadrado, como no tabuleiro físico
+  const [view, setView] = useState<"2d" | "3d">("2d");
   const [selected, setSelected] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -387,6 +389,30 @@ function GameTable() {
 
   const selectedToken = useMemo(() => tokens.find((t) => t.id === selected) ?? null, [tokens, selected]);
 
+  // Na visão 3D os tokens não são botões de DOM individuais (não dá pra focar
+  // cada um), então o movimento por teclado do selecionado fica num atalho
+  // global — mesmas regras de sempre (setas movem, Delete remove).
+  useEffect(() => {
+    if (view !== "3d") return;
+    function handler(e: KeyboardEvent) {
+      if (!selectedToken || !room) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "Delete" && canControl(selectedToken)) return void removeToken(selectedToken);
+      const delta: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+      const d = delta[e.key];
+      if (!d || !canControl(selectedToken)) return;
+      e.preventDefault();
+      const span = SIZE_CELLS[selectedToken.stats.size];
+      const x = Math.max(0, Math.min(room.cols - span, selectedToken.x + d[0]));
+      const y = Math.max(0, Math.min(room.rows - span, selectedToken.y + d[1]));
+      moveToken(selectedToken.id, x, y);
+      persistPosition(selectedToken.id, x, y);
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [view, selectedToken, room, canControl, moveToken, persistPosition]);
+
   /** Personagem que esse jogador trouxe para a mesa (pelo token vinculado a ele). */
   const charIdForUser = useCallback(
     (uid: string) => tokens.find((t) => t.owner_id === uid && t.character_id)?.character_id ?? null,
@@ -479,6 +505,19 @@ function GameTable() {
           )}
 
           <div ref={stageRef} className="mesa-stage">
+            {view === "3d" ? (
+              <Board3D
+                cols={room.cols}
+                rows={room.rows}
+                tokens={tokens}
+                selected={selected}
+                activeTurnId={room.turn_order[room.current_turn]?.token_id}
+                canControl={canControl}
+                onSelect={(id) => (id ? selectToken(id) : setSelected(null))}
+                onMove={moveToken}
+                onMoveEnd={persistPosition}
+              />
+            ) : (
             <div
               ref={boardRef}
               className="mesa-board"
@@ -583,6 +622,7 @@ function GameTable() {
                 );
               })}
             </div>
+            )}
 
             {tokens.length === 0 && (
               <div className="mesa-empty">
@@ -599,7 +639,15 @@ function GameTable() {
             )}
           </div>
 
-          <StageControls cell={cell} onChange={setCell} onFit={fitToScreen} />
+          <div className="mesa-view-toggle" role="group" aria-label="Modo de visualização do mapa">
+            <button className={`mesa-view-btn ${view === "2d" ? "is-active" : ""}`} onClick={() => setView("2d")}>
+              ⬛ 2D
+            </button>
+            <button className={`mesa-view-btn ${view === "3d" ? "is-active" : ""}`} onClick={() => setView("3d")}>
+              🧊 3D
+            </button>
+          </div>
+          {view === "2d" && <StageControls cell={cell} onChange={setCell} onFit={fitToScreen} />}
         </div>
 
         {/* ---------- Painel lateral por abas ---------- */}
