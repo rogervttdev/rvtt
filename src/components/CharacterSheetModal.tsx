@@ -2,13 +2,15 @@
 
 import { useEffect, useRef } from "react";
 import { CharacterSheet } from "@/app/fichas/[id]/page";
+import { CharacterSummary } from "@/components/mesa/CharacterSummary";
 
 /**
- * Abre a ficha completa de um personagem numa janela flutuante, sem sair da mesa.
- * Usado tanto pelo jogador ("Minha ficha") quanto pelo mestre (clicando no
- * retrato de qualquer jogador na barra de presença).
+ * Jogador abrindo a própria ficha ("Minha ficha"): abre a ficha completa, com
+ * tudo editável. Mestre abrindo a ficha de outro jogador (clicando no retrato
+ * dele na barra de presença): abre só o resumo de uma página — não precisa
+ * das abas todas pra uma espiada rápida, e evita editar a ficha de outra pessoa.
  */
-export function CharacterSheetModal({ characterId, onClose }: { characterId: string | null; onClose: () => void }) {
+export function CharacterSheetModal({ characterId, mode = "full", onClose }: { characterId: string | null; mode?: "full" | "resumo"; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export function CharacterSheetModal({ characterId, onClose }: { characterId: str
     >
       {characterId && (
         <div className="sheet-modal-inner">
-          <CharacterSheet characterId={characterId} embedded onClose={onClose} />
+          {mode === "resumo" ? <CharacterSummary characterId={characterId} /> : <CharacterSheet characterId={characterId} embedded onClose={onClose} />}
         </div>
       )}
     </dialog>

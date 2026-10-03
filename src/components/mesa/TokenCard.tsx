@@ -16,10 +16,12 @@ type Props = {
   onToggleRage: (t: Token) => void;
   onRoll: (label: string, formula: string) => void;
   onRemove: (t: Token) => void;
+  /** Mestre vendo o token de outro jogador: abre o resumo da ficha dele. */
+  onOpenSummary?: (characterId: string) => void;
 };
 
 /** Ficha de bolso da peça selecionada: vida, CA, ataques com botão de rolar e poderes de classe. */
-export function TokenCard({ token: t, canControl, ownerId, userId, onUpdateStats, onToggleRage, onRoll, onRemove }: Props) {
+export function TokenCard({ token: t, canControl, ownerId, userId, onUpdateStats, onToggleRage, onRoll, onRemove, onOpenSummary }: Props) {
   const hpPct = t.stats.hp_max > 0 ? Math.max(0, Math.min(100, (t.stats.hp_current / t.stats.hp_max) * 100)) : 0;
   const hpClass = hpPct <= 25 ? "is-low" : hpPct <= 60 ? "is-mid" : "";
   const raging = Boolean(t.stats.active_effects?.includes("rage"));
@@ -209,6 +211,11 @@ export function TokenCard({ token: t, canControl, ownerId, userId, onUpdateStats
           <Link href={`/fichas/${t.character_id}`} target="_blank" className="btn btn-ghost border border-rule text-sm">
             Abrir ficha completa
           </Link>
+        )}
+        {t.character_id && t.owner_id !== userId && onOpenSummary && (
+          <button className="btn btn-ghost border border-rule text-sm" onClick={() => onOpenSummary(t.character_id!)}>
+            Ver ficha (resumo)
+          </button>
         )}
         {canControl && (
           <button className="btn btn-danger ml-auto text-sm" onClick={() => onRemove(t)}>

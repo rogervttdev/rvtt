@@ -142,6 +142,7 @@ export function normalizeTokenStats(raw: unknown): TokenStats {
     classKey: r.classKey,
     level: r.level,
     avatarUrl: r.avatarUrl ?? null,
+    role: r.role,
     active_effects: Array.isArray(r.active_effects) ? r.active_effects.filter((x) => typeof x === "string") : [],
     furiaUsed: Number(r.furiaUsed ?? 0),
     conditions: Array.isArray(r.conditions) ? r.conditions.filter((x) => typeof x === "string") : [],

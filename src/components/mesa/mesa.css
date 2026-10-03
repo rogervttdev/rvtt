@@ -76,6 +76,12 @@
 .mesa-view-btn { padding: 0.4rem 0.7rem; border-radius: 0.5rem; font-size: 0.82rem; font-weight: 800; color: var(--color-foam); cursor: pointer; }
 .mesa-view-btn:hover { background: rgb(195 154 78 / 0.2); }
 .mesa-view-btn.is-active { background: linear-gradient(to bottom, rgb(195 154 78 / 0.5), rgb(195 154 78 / 0.25)); color: var(--color-brass-light); }
+.mesa-board-coords { display: inline-block; }
+.mesa-coords-row { display: flex; }
+.mesa-coords-corner { flex-shrink: 0; }
+.mesa-coords-cols { display: flex; }
+.mesa-coords-cols span, .mesa-coords-rows span { display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.7rem; font-weight: 800; color: var(--color-brass-light); opacity: 0.85; }
+.mesa-coords-rows { display: flex; flex-direction: column; flex-shrink: 0; }
 .mesa-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; pointer-events: none; }
 .mesa-empty-card { max-width: 24rem; text-align: center; padding: 1.1rem 1.3rem; border-radius: 0.8rem; color: var(--color-ink); background: rgb(246 236 212 / 0.93); border: 1px dashed var(--color-brass-deep); box-shadow: 0 10px 26px -10px rgb(0 0 0 / 0.6); }
 .mesa-alert { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: #ffd9d1; background: #5a1610; border-bottom: 1px solid #8f2417; }

@@ -138,6 +138,8 @@ export type Room = {
   cols: number;
   rows: number;
   background_url: string | null;
+  /** Textura do piso do tabuleiro (2D e 3D). Padrão: "madeira". */
+  terrain?: "madeira" | "pedra" | "grama" | "deserto";
   /** Rastreador de iniciativa: ordem dos combatentes, de quem está na vez e a rodada atual */
   turn_order: TurnEntry[];
   current_turn: number;
@@ -164,6 +166,8 @@ export type TokenStats = {
   sceneryId?: string;
   /** "pc" | "monster" (padrão) ou "cenario" — decide como o token é desenhado no mapa */
   kind?: "pc" | "monster" | "cenario";
+  /** Papel da peça na mesa: liga a uma ficha, ou é um aliado/inimigo livre (sem ficha). */
+  role?: "personagem" | "aliado" | "inimigo";
   /** Emoji do item de cenário, para desenhar o quadradinho sem precisar do catálogo */
   icon?: string;
   blocks?: boolean;

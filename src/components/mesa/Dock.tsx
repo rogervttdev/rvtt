@@ -1,6 +1,6 @@
 "use client";
 
-export type DockAction = "herois" | "monstros" | "cenario" | "dados" | "combate" | "ficha" | "ajuda";
+export type DockAction = "herois" | "cenario" | "dados" | "combate" | "ficha" | "ajuda";
 
 type Props = {
   isGM: boolean;
@@ -13,11 +13,10 @@ type Props = {
 type Item = { id: DockAction; icon: string; label: string; hint: string; gmOnly?: boolean; needsSheet?: boolean };
 
 const ITEMS: Item[] = [
-  { id: "herois", icon: "🧙", label: "Heróis", hint: "Colocar seu personagem (ou uma peça livre) no mapa" },
+  { id: "herois", icon: "📍", label: "Peças", hint: "Colocar seu personagem, um aliado ou um inimigo no mapa" },
   { id: "ficha", icon: "📜", label: "Ficha", hint: "Abrir a ficha do seu personagem sem sair da mesa", needsSheet: true },
   { id: "dados", icon: "🎲", label: "Dados", hint: "Rolar dados e ver as rolagens de todo mundo" },
   { id: "combate", icon: "⚔️", label: "Combate", hint: "Ordem dos turnos e rodada atual" },
-  { id: "monstros", icon: "🐉", label: "Monstros", hint: "Bestiário com 334 criaturas prontas para o mapa", gmOnly: true },
   { id: "cenario", icon: "🌲", label: "Cenário", hint: "Paredes, árvores, mobília e armadilhas", gmOnly: true },
   { id: "ajuda", icon: "❓", label: "Ajuda", hint: "Passo a passo de como jogar" },
 ];
@@ -29,7 +28,7 @@ export function Dock({ isGM, active, combatOpen, hasSheet, onAction }: Props) {
     <nav className="mesa-dock" aria-label="Ferramentas da mesa">
       {items.map((it, idx) => {
         const isActive = it.id === "combate" ? combatOpen : active === it.id;
-        const showSep = it.id === "monstros" || (it.id === "ajuda" && idx > 0);
+        const showSep = it.id === "cenario" || (it.id === "ajuda" && idx > 0 && !isGM);
         return (
           <span key={it.id} className="contents">
             {showSep && <span className="mesa-dock-sep" aria-hidden />}

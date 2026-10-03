@@ -8,7 +8,7 @@ import { useUser } from "@/components/SessionProvider";
 import { supabase } from "@/lib/supabase";
 import { useRoomChannel } from "@/lib/mesa-canal";
 import { initials, normalizeCharacter, rollFormula, uid } from "@/lib/dnd";
-import { DEFAULT_TOKEN_STATS, MONSTERS, SIZE_CELLS, normalizeTokenStats, statsFromMonster, type MonsterDef } from "@/lib/monstros";
+import { DEFAULT_TOKEN_STATS, SIZE_CELLS, normalizeTokenStats } from "@/lib/monstros";
 import { MonsterPanel } from "@/components/MonsterPanel";
 import { TokenTooltip } from "@/components/TokenTooltip";
 import { InitiativeTracker } from "@/components/InitiativeTracker";
@@ -17,7 +17,7 @@ import { CharacterSheetModal } from "@/components/CharacterSheetModal";
 import { SCENERY, findScenery, statsFromScenery, type SceneryDef } from "@/lib/cenario";
 import { SceneryIcon } from "@/components/mesa/SceneryArt";
 import { toggleRageStats } from "@/lib/estados";
-import { findCondition } from "@/lib/condicoes";
+import { findTerrain, TERRAINS } from "@/lib/terrenos";
 import { characterCombat } from "@/lib/personagem";
 import { Board3D } from "@/components/mesa/Board3D";
 import { TableHud } from "@/components/mesa/TableHud";
@@ -36,6 +36,17 @@ export default function MesaPage() {
       <GameTable />
     </RequireAuth>
   );
+}
+
+/** 0→A, 1→B … 25→Z, 26→AA, 27→AB … — igual coluna de planilha, pra tabuleiros com mais de 26 colunas. */
+function columnLetter(i: number): string {
+  let s = "";
+  let n = i;
+  do {
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return s;
 }
 
 type Drag = { id: string; x: number; y: number; moved: boolean };
@@ -57,11 +68,12 @@ function GameTable() {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const [bestiaryTab, setBestiaryTab] = useState<"monstros" | "cenario" | null>(null);
+  const [sceneryOpen, setSceneryOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
   const [diceQueue, setDiceQueue] = useState<RollEntry[]>([]);
   const [sheetId, setSheetId] = useState<string | null>(null);
+  const [sheetMode, setSheetMode] = useState<"full" | "resumo">("full");
   const [charPicker, setCharPicker] = useState(false);
   const [tab, setTab] = useState<SideTab>("herois");
   const [guideOpen, setGuideOpen] = useState(false);
@@ -85,7 +97,7 @@ function GameTable() {
       if (cancelled) return;
       if (!roomRes.data) return setStatus("missing");
       const r = roomRes.data as Room;
-      setRoom({ ...r, turn_order: Array.isArray(r.turn_order) ? r.turn_order : [], current_turn: r.current_turn ?? 0, round: r.round ?? 1 });
+      setRoom({ ...r, turn_order: Array.isArray(r.turn_order) ? r.turn_order : [], current_turn: r.current_turn ?? 0, round: r.round ?? 1, terrain: r.terrain ?? "madeira" });
       setTokens(((tokenRes.data as Token[]) ?? []).map((t) => ({ ...t, stats: normalizeTokenStats(t.stats) })));
       setMyChars((charRes.data as CharOption[]) ?? []);
       setStatus("ready");
@@ -266,28 +278,6 @@ function GameTable() {
     };
   }
 
-  /** Instancia N monstros do bestiário direto no mapa, com CA/PV/ataques prontos. */
-  async function addMonster(m: MonsterDef, qty = 1) {
-    if (!room) return;
-    const span = SIZE_CELLS[m.size];
-    const spots = freeSpots(span, qty);
-    const rows = spots.map((spot, i) => ({
-      room_id: room.id,
-      owner_id: user.id,
-      label: qty > 1 ? `${m.name} ${i + 1}` : m.name,
-      color: m.color,
-      character_id: null,
-      stats: statsFromMonster(m),
-      ...spot,
-    }));
-    if (rows.length === 0) return;
-    const { data, error } = await supabase.from("tokens").insert(rows).select("*");
-    if (error) return setError(`Não foi possível colocar: ${error.message}`);
-    const batch = (data as Token[]).map((t) => ({ ...t, stats: normalizeTokenStats(t.stats) }));
-    setTokens((ts) => [...ts, ...batch]);
-    send("token-add-batch", batch);
-  }
-
   /** Instancia N itens de cenário (paredes, mobília, natureza…) já espalhados em casas livres. */
   async function addScenery(item: SceneryDef, qty = 1, at?: { x: number; y: number }) {
     if (!room) return;
@@ -355,7 +345,7 @@ function GameTable() {
     const next = { ...room, ...p };
     const { error } = await supabase
       .from("rooms")
-      .update({ name: next.name, cols: next.cols, rows: next.rows, background_url: next.background_url })
+      .update({ name: next.name, cols: next.cols, rows: next.rows, background_url: next.background_url, terrain: next.terrain })
       .eq("id", room.id);
     setRoom(next);
     send("room-update", next);
@@ -421,6 +411,7 @@ function GameTable() {
   );
 
   function openMyCharacter() {
+    setSheetMode("full");
     const fromToken = charIdForUser(user.id);
     if (fromToken) return setSheetId(fromToken);
     if (myChars.length === 1) return setSheetId(myChars[0].id);
@@ -428,8 +419,7 @@ function GameTable() {
   }
 
   function onDockAction(a: DockAction) {
-    if (a === "monstros") return setBestiaryTab("monstros");
-    if (a === "cenario") return setBestiaryTab("cenario");
+    if (a === "cenario") return setSceneryOpen(true);
     if (a === "ficha") return openMyCharacter();
     if (a === "ajuda") return setGuideOpen(true);
     setTab(a);
@@ -454,16 +444,17 @@ function GameTable() {
     return <SceneryIcon item={def} className="mesa-token-art" />;
   }
 
-  const gridLine = "rgb(90 58 36 / 0.32)";
+  const terrain = findTerrain(room.terrain);
   const bgLayers = [
-    `linear-gradient(to right, ${gridLine} 1px, transparent 1px)`,
-    `linear-gradient(to bottom, ${gridLine} 1px, transparent 1px)`,
+    `linear-gradient(to right, ${terrain.grid} 1px, transparent 1px)`,
+    `linear-gradient(to bottom, ${terrain.grid} 1px, transparent 1px)`,
     ...(room.background_url ? [`url("${room.background_url.replace(/"/g, "%22")}")`] : []),
   ];
+  const colLetters = Array.from({ length: room.cols }, (_, i) => columnLetter(i));
 
   const TABS: { id: SideTab; icon: string; label: string }[] = [
     ...(selectedToken ? [{ id: "acao" as const, icon: "🎯", label: "Ação" }] : []),
-    { id: "herois", icon: "🧙", label: "Heróis" },
+    { id: "herois", icon: "📍", label: "Peças" },
     { id: "dados", icon: "🎲", label: "Dados" },
     { id: "combate", icon: "⚔️", label: "Combate" },
     ...(isGM ? [{ id: "mesa" as const, icon: "⚙️", label: "Mesa" }] : []),
@@ -481,7 +472,10 @@ function GameTable() {
         online={online}
         copied={copied}
         charIdForUser={charIdForUser}
-        onOpenSheet={setSheetId}
+        onOpenSheet={(id) => {
+          setSheetMode(id === charIdForUser(user.id) ? "full" : "resumo");
+          setSheetId(id);
+        }}
         onInvite={copyLink}
         onHelp={() => setGuideOpen(true)}
       />
@@ -510,6 +504,7 @@ function GameTable() {
               <Board3D
                 cols={room.cols}
                 rows={room.rows}
+                floorColor={terrain.floor}
                 tokens={tokens}
                 selected={selected}
                 activeTurnId={room.turn_order[room.current_turn]?.token_id}
@@ -519,13 +514,32 @@ function GameTable() {
                 onMoveEnd={persistPosition}
               />
             ) : (
+            <div className="mesa-board-coords">
+              <div className="mesa-coords-row">
+                <span className="mesa-coords-corner" style={{ width: cell * 0.6 }} aria-hidden />
+                <div className="mesa-coords-cols" style={{ width: room.cols * cell }}>
+                  {colLetters.map((l, i) => (
+                    <span key={i} style={{ width: cell }}>
+                      {l}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="mesa-coords-row">
+                <div className="mesa-coords-rows" style={{ width: cell * 0.6, height: room.rows * cell }}>
+                  {Array.from({ length: room.rows }, (_, i) => (
+                    <span key={i} style={{ height: cell }}>
+                      {i + 1}
+                    </span>
+                  ))}
+                </div>
             <div
               ref={boardRef}
               className="mesa-board"
               style={{
                 width: room.cols * cell,
                 height: room.rows * cell,
-                backgroundColor: "#f3e6c7",
+                backgroundColor: terrain.floor,
                 backgroundImage: bgLayers.join(","),
                 backgroundSize: `${cell}px ${cell}px, ${cell}px ${cell}px, 100% 100%`,
               }}
@@ -535,14 +549,8 @@ function GameTable() {
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
-                const monsterId = e.dataTransfer.getData("application/x-monster-id");
                 const sceneryId = e.dataTransfer.getData("application/x-scenery-id");
-                if (monsterId) {
-                  const m = MONSTERS.find((x) => x.id === monsterId);
-                  if (!m) return;
-                  const at = cellFromPointer(e.clientX, e.clientY, SIZE_CELLS[m.size]);
-                  addToken({ label: m.name, color: m.color, character_id: null, stats: statsFromMonster(m), at });
-                } else if (sceneryId) {
+                if (sceneryId) {
                   const item = SCENERY.find((x) => x.id === sceneryId);
                   if (!item) return;
                   const at = cellFromPointer(e.clientX, e.clientY, SIZE_CELLS[item.size]);
@@ -602,17 +610,6 @@ function GameTable() {
                         🔥
                       </span>
                     )}
-                    {!isScenery && (t.stats.conditions?.length ?? 0) > 0 && (
-                      <span className="condition-badge" aria-hidden title={t.stats.conditions!.map((id) => findCondition(id)?.name ?? id).join(", ")}>
-                        {findCondition(t.stats.conditions![0])?.icon ?? "❔"}
-                        {t.stats.conditions!.length > 1 && <span className="condition-badge-count">+{t.stats.conditions!.length - 1}</span>}
-                      </span>
-                    )}
-                    {!isScenery && (t.stats.exhaustion ?? 0) > 0 && (
-                      <span className="exhaustion-badge" aria-hidden title={`Exausto (nível ${t.stats.exhaustion})`}>
-                        {t.stats.exhaustion}
-                      </span>
-                    )}
                     {!isScenery && hpPct < 100 && (
                       <span className="mt-0.5 block h-1 w-2/3 overflow-hidden rounded-full bg-black/40" aria-hidden>
                         <span className={`block h-full ${hpPct <= 25 ? "bg-blood" : "bg-moss"}`} style={{ width: `${hpPct}%` }} />
@@ -622,6 +619,8 @@ function GameTable() {
                   </button>
                 );
               })}
+            </div>
+              </div>
             </div>
             )}
 
@@ -633,7 +632,7 @@ function GameTable() {
                   </p>
                   <p className="mt-1 font-display text-lg font-bold">O mapa está vazio</p>
                   <p className="mesa-hint mt-1">
-                    Use “🧙 Heróis” para colocar seu personagem{isGM ? ", ou “🐉 Monstros” / “🌲 Cenário” para montar a cena" : ""}.
+                    Use “📍 Peças” para colocar seu personagem, um aliado ou um inimigo{isGM ? ", ou “🌲 Cenário” para montar a cena" : ""}.
                   </p>
                 </div>
               </div>
@@ -675,6 +674,10 @@ function GameTable() {
                 onToggleRage={toggleRage}
                 onRoll={rollAndSend}
                 onRemove={removeToken}
+                onOpenSummary={(id) => {
+                  setSheetMode("resumo");
+                  setSheetId(id);
+                }}
               />
             )}
 
@@ -711,13 +714,7 @@ function GameTable() {
           return t ? <TokenTooltip token={t} x={hoverPos.x} y={hoverPos.y} /> : null;
         })()}
 
-      <MonsterPanel
-        open={bestiaryTab !== null}
-        initialTab={bestiaryTab ?? undefined}
-        onClose={() => setBestiaryTab(null)}
-        onAddMonster={addMonster}
-        onAddScenery={addScenery}
-      />
+      <MonsterPanel open={sceneryOpen} onClose={() => setSceneryOpen(false)} onAddScenery={addScenery} />
 
       {charPicker && (
         <div className="my-sheet-fab">
@@ -740,7 +737,7 @@ function GameTable() {
       )}
 
       <WelcomeGuide open={guideOpen} isGM={isGM} onClose={closeGuide} />
-      <CharacterSheetModal characterId={sheetId} onClose={() => setSheetId(null)} />
+      <CharacterSheetModal characterId={sheetId} mode={sheetMode} onClose={() => setSheetId(null)} />
       <DiceOverlay roll={diceQueue[0] ?? null} onDone={() => setDiceQueue((q) => q.slice(1))} />
     </div>
   );
@@ -752,6 +749,7 @@ function RoomSettings({ room, onSave }: { room: Room; onSave: (p: Partial<Room>)
     cols: room.cols,
     rows: room.rows,
     background_url: room.background_url ?? "",
+    terrain: room.terrain ?? "madeira",
   });
   const [saved, setSaved] = useState(false);
 
@@ -765,6 +763,7 @@ function RoomSettings({ room, onSave }: { room: Room; onSave: (p: Partial<Room>)
           cols: Math.max(5, Math.min(80, form.cols || room.cols)),
           rows: Math.max(5, Math.min(80, form.rows || room.rows)),
           background_url: form.background_url.trim() || null,
+          terrain: form.terrain,
         });
         setSaved(true);
         setTimeout(() => setSaved(false), 1800);
@@ -786,6 +785,20 @@ function RoomSettings({ room, onSave }: { room: Room; onSave: (p: Partial<Room>)
             <input className="field" type="number" min={5} max={80} value={form.rows} onChange={(e) => setForm({ ...form, rows: Number(e.target.value) })} />
           </label>
         </div>
+        <div>
+          <p className="mesa-label">Piso do tabuleiro</p>
+          <div className="grid grid-cols-4 gap-1.5">
+            {TERRAINS.map((t) => (
+              <label key={t.id} className={`mesa-choice !flex-col !items-center !text-center !px-1 ${form.terrain === t.id ? "is-on" : ""}`}>
+                <input type="radio" name="terrain" checked={form.terrain === t.id} onChange={() => setForm({ ...form, terrain: t.id })} />
+                <span aria-hidden className="text-lg">
+                  {t.icon}
+                </span>
+                <span className="text-xs font-bold">{t.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
         <label className="block">
           <span className="mesa-label">Imagem do mapa (URL)</span>
           <input
@@ -794,6 +807,7 @@ function RoomSettings({ room, onSave }: { room: Room; onSave: (p: Partial<Room>)
             onChange={(e) => setForm({ ...form, background_url: e.target.value })}
             placeholder="https://…/masmorra.jpg"
           />
+          <span className="mesa-hint">Se preencher, a imagem cobre o piso escolhido acima.</span>
         </label>
         <button className="btn btn-primary w-full">{saved ? "✅ Mesa atualizada" : "Salvar configurações"}</button>
       </div>

@@ -9,7 +9,7 @@
  */
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
-import { OrbitControls, Billboard, useTexture } from "@react-three/drei";
+import { OrbitControls, Billboard } from "@react-three/drei";
 import * as THREE from "three";
 import { SIZE_CELLS } from "@/lib/monstros";
 import { findScenery } from "@/lib/cenario";
@@ -45,6 +45,7 @@ function useLabelTexture(text: string, color: string) {
 type Props = {
   cols: number;
   rows: number;
+  floorColor: string;
   tokens: Token[];
   selected: string | null;
   activeTurnId?: string;
@@ -54,7 +55,7 @@ type Props = {
   onMoveEnd: (id: string, x: number, y: number) => void;
 };
 
-export function Board3D({ cols, rows, tokens, selected, activeTurnId, canControl, onSelect, onMove, onMoveEnd }: Props) {
+export function Board3D({ cols, rows, floorColor, tokens, selected, activeTurnId, canControl, onSelect, onMove, onMoveEnd }: Props) {
   const dragId = useRef<string | null>(null);
   const controlsRef = useRef<React.ComponentRef<typeof OrbitControls>>(null);
   const [locked, setLocked] = useState(false);
@@ -122,9 +123,10 @@ export function Board3D({ cols, rows, tokens, selected, activeTurnId, canControl
             onPointerLeave={handleGroundUp}
           >
             <planeGeometry args={[cols, rows]} />
-            <meshStandardMaterial color="#e8d4a0" roughness={0.9} />
+            <meshStandardMaterial color={floorColor} roughness={0.9} />
           </mesh>
           <GridLines cols={cols} rows={rows} />
+          <CoordLabels cols={cols} rows={rows} />
           <mesh position={[0, -0.09, 0]} receiveShadow>
             <boxGeometry args={[cols + 0.6, 0.16, rows + 0.6]} />
             <meshStandardMaterial color="#5a3a24" roughness={0.85} />
@@ -190,6 +192,44 @@ function GridLines({ cols, rows }: { cols: number; rows: number }) {
   );
 }
 
+/** 0→A, 1→B … 25→Z, 26→AA — igual coluna de planilha. */
+function columnLetter(i: number): string {
+  let s = "";
+  let n = i;
+  do {
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return s;
+}
+
+/** Um texto só, sempre de frente pra câmera, deitado no plano do chão (usado pelas coordenadas). */
+function FlatLabel({ text, position }: { text: string; position: [number, number, number] }) {
+  const tex = useLabelTexture(text, "#fbeed3");
+  return (
+    <Billboard position={position}>
+      <mesh>
+        <planeGeometry args={[0.4, 0.4]} />
+        <meshBasicMaterial map={tex} transparent depthWrite={false} />
+      </mesh>
+    </Billboard>
+  );
+}
+
+/** Letras (A, B, C…) na borda de cima e números (1, 2, 3…) na borda esquerda do tabuleiro. */
+function CoordLabels({ cols, rows }: { cols: number; rows: number }) {
+  return (
+    <>
+      {Array.from({ length: cols }, (_, i) => (
+        <FlatLabel key={`c${i}`} text={columnLetter(i)} position={[i - cols / 2 + 0.5, 0.22, -rows / 2 - 0.4]} />
+      ))}
+      {Array.from({ length: rows }, (_, i) => (
+        <FlatLabel key={`r${i}`} text={String(i + 1)} position={[-cols / 2 - 0.4, 0.22, i - rows / 2 + 0.5]} />
+      ))}
+    </>
+  );
+}
+
 function LabelSprite({ text, color = "#fbeed3" }: { text: string; color?: string }) {
   const tex = useLabelTexture(text, color);
   return (
@@ -202,140 +242,6 @@ function LabelSprite({ text, color = "#fbeed3" }: { text: string; color?: string
 
 type MeshHandlers = { onPointerDown: (e: ThreeEvent<PointerEvent>) => void };
 
-// ---------------------------------------------------------------------------
-// Miniaturas de classe: para o token de um personagem de jogador, troca o
-// cilindro genérico por uma miniatura com a silhueta da classe dele.
-// ---------------------------------------------------------------------------
-type ClassArchetype = "marcial" | "arcano" | "divino" | "furtivo";
-
-const CLASS_ARCHETYPE: Record<string, ClassArchetype> = {
-  Guerreiro: "marcial",
-  Bárbaro: "marcial",
-  Paladino: "marcial",
-  Patrulheiro: "marcial",
-  Monge: "marcial",
-  Mago: "arcano",
-  Feiticeiro: "arcano",
-  Bruxo: "arcano",
-  Clérigo: "divino",
-  Druida: "divino",
-  Ladino: "furtivo",
-  Bardo: "furtivo",
-};
-
-function PlayerMini({ color, archetype, radius }: { color: string; archetype: ClassArchetype; radius: number }) {
-  const bodyH = radius * 1.7;
-  const headY = bodyH + radius * 0.42;
-  return (
-    <group>
-      {/* Corpo: um "robe"/torso tronco-cônico — lê bem como figura em pé em qualquer classe */}
-      <mesh castShadow position={[0, bodyH / 2 + 0.13, 0]}>
-        <cylinderGeometry args={[radius * 0.52, radius * 0.82, bodyH, 16]} />
-        <meshStandardMaterial color={color} roughness={0.6} />
-      </mesh>
-      {/* Cabeça */}
-      <mesh castShadow position={[0, headY + 0.13, 0]}>
-        <sphereGeometry args={[radius * 0.4, 16, 16]} />
-        <meshStandardMaterial color="#d9a876" roughness={0.7} />
-      </mesh>
-
-      {archetype === "marcial" && (
-        <>
-          {/* Ombreiras */}
-          <mesh castShadow position={[-radius * 0.62, bodyH * 0.85 + 0.13, 0]}>
-            <sphereGeometry args={[radius * 0.22, 10, 10]} />
-            <meshStandardMaterial color="#9a9aa0" metalness={0.4} roughness={0.5} />
-          </mesh>
-          <mesh castShadow position={[radius * 0.62, bodyH * 0.85 + 0.13, 0]}>
-            <sphereGeometry args={[radius * 0.22, 10, 10]} />
-            <meshStandardMaterial color="#9a9aa0" metalness={0.4} roughness={0.5} />
-          </mesh>
-          {/* Espada às costas */}
-          <mesh castShadow position={[0, bodyH * 0.75 + 0.13, -radius * 0.55]} rotation={[0.25, 0, 0]}>
-            <boxGeometry args={[radius * 0.14, bodyH * 0.95, radius * 0.06]} />
-            <meshStandardMaterial color="#c9ccd4" metalness={0.6} roughness={0.3} />
-          </mesh>
-        </>
-      )}
-
-      {archetype === "arcano" && (
-        <>
-          {/* Chapéu pontudo */}
-          <mesh castShadow position={[0, headY + radius * 0.55 + 0.13, 0]}>
-            <coneGeometry args={[radius * 0.44, radius * 1.05, 14]} />
-            <meshStandardMaterial color={color} roughness={0.55} />
-          </mesh>
-          {/* Cajado com orbe */}
-          <mesh castShadow position={[radius * 0.8, bodyH * 0.55 + 0.13, 0]}>
-            <cylinderGeometry args={[radius * 0.05, radius * 0.05, bodyH * 1.3, 8]} />
-            <meshStandardMaterial color="#6b4a2a" />
-          </mesh>
-          <mesh position={[radius * 0.8, bodyH * 1.15 + 0.13, 0]}>
-            <sphereGeometry args={[radius * 0.16, 12, 12]} />
-            <meshStandardMaterial color="#c9a8e6" emissive="#c9a8e6" emissiveIntensity={0.9} />
-          </mesh>
-        </>
-      )}
-
-      {archetype === "divino" && (
-        <>
-          {/* Auréola/circlet */}
-          <mesh position={[0, headY + radius * 0.5 + 0.13, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[radius * 0.34, radius * 0.045, 8, 20]} />
-            <meshStandardMaterial color="#e6c987" metalness={0.5} roughness={0.3} emissive="#e6c987" emissiveIntensity={0.3} />
-          </mesh>
-          {/* Símbolo sagrado no peito */}
-          <mesh position={[0, bodyH * 0.65 + 0.13, radius * 0.72]}>
-            <circleGeometry args={[radius * 0.2, 16]} />
-            <meshStandardMaterial color="#e6c987" metalness={0.5} roughness={0.3} />
-          </mesh>
-        </>
-      )}
-
-      {archetype === "furtivo" && (
-        <>
-          {/* Capuz (cone curto cobrindo a cabeça) */}
-          <mesh castShadow position={[0, headY + radius * 0.15 + 0.13, -radius * 0.08]}>
-            <coneGeometry args={[radius * 0.46, radius * 0.6, 14]} />
-            <meshStandardMaterial color={color} roughness={0.6} />
-          </mesh>
-          {/* Duas adagas na cintura */}
-          <mesh castShadow position={[-radius * 0.55, bodyH * 0.35 + 0.13, radius * 0.3]} rotation={[0, 0, 0.5]}>
-            <boxGeometry args={[radius * 0.08, radius * 0.4, radius * 0.05]} />
-            <meshStandardMaterial color="#c9ccd4" metalness={0.6} roughness={0.3} />
-          </mesh>
-          <mesh castShadow position={[radius * 0.55, bodyH * 0.35 + 0.13, radius * 0.3]} rotation={[0, 0, -0.5]}>
-            <boxGeometry args={[radius * 0.08, radius * 0.4, radius * 0.05]} />
-            <meshStandardMaterial color="#c9ccd4" metalness={0.6} roughness={0.3} />
-          </mesh>
-        </>
-      )}
-    </group>
-  );
-}
-
-/**
- * "Standee": recorte 3D com o retrato de verdade do personagem (o mesmo da
- * ficha), em pé sobre uma baseszinha redonda e sempre virado pra câmera — é a
- * própria arte dele, não uma forma geométrica abstrata. O mesmo truque usado
- * por várias mesas virtuais pra miniatura de personagem.
- */
-function StandeeMini({ url, height }: { url: string; height: number }) {
-  const texture = useTexture(url);
-  const w = (texture.image as { width?: number })?.width ?? 1;
-  const h = (texture.image as { height?: number })?.height ?? 1;
-  const planeH = height;
-  const planeW = planeH * (w / h);
-  return (
-    <Billboard position={[0, planeH / 2 + 0.03, 0]}>
-      <mesh>
-        <planeGeometry args={[planeW, planeH]} />
-        <meshBasicMaterial map={texture} transparent alphaTest={0.1} toneMapped={false} />
-      </mesh>
-    </Billboard>
-  );
-}
-
 function TokenMesh3D({
   position,
   token: t,
@@ -347,10 +253,6 @@ function TokenMesh3D({
   const radius = span * 0.42;
   const hpPct = t.stats.hp_max > 0 ? Math.max(0, Math.min(1, t.stats.hp_current / t.stats.hp_max)) : 1;
   const barW = radius * 1.7;
-  const archetype = t.character_id && t.stats.classKey ? CLASS_ARCHETYPE[t.stats.classKey] : undefined;
-  const hasStandee = Boolean(t.character_id && t.stats.avatarUrl);
-  const standeeH = radius * 3.6;
-  const topY = hasStandee ? standeeH + 0.12 : archetype ? radius * 2.6 : 0.5;
 
   return (
     <group position={position} onPointerDown={onPointerDown}>
@@ -367,30 +269,17 @@ function TokenMesh3D({
         </mesh>
       )}
 
-      {/* Base redonda — todo mundo ganha uma, igual uma miniatura de verdade */}
-      <mesh castShadow position={[0, 0.03, 0]}>
-        <cylinderGeometry args={[radius * 0.9, radius * 0.95, 0.06, 24]} />
-        <meshStandardMaterial color="#2a1c12" roughness={0.9} />
+      {/* Ficha-padrão: um cilindro colorido com as iniciais, igual sempre foi no 2D */}
+      <mesh castShadow position={[0, 0.13, 0]}>
+        <cylinderGeometry args={[radius, radius * 1.08, 0.26, 28]} />
+        <meshStandardMaterial color={t.color} roughness={0.55} />
       </mesh>
 
-      {hasStandee ? (
-        <Suspense fallback={<mesh position={[0, 0.3, 0]}><cylinderGeometry args={[radius, radius, 0.5, 16]} /><meshStandardMaterial color={t.color} /></mesh>}>
-          <StandeeMini url={t.stats.avatarUrl!} height={standeeH} />
-        </Suspense>
-      ) : archetype ? (
-        <PlayerMini color={t.color} archetype={archetype} radius={radius} />
-      ) : (
-        <mesh castShadow position={[0, 0.13, 0]}>
-          <cylinderGeometry args={[radius, radius * 1.08, 0.26, 28]} />
-          <meshStandardMaterial color={t.color} roughness={0.55} />
-        </mesh>
-      )}
-
-      <Billboard position={[0, topY, 0]}>
+      <Billboard position={[0, 0.5, 0]}>
         <LabelSprite text={initials(t.label)} />
       </Billboard>
       {t.stats.hp_max > 0 && (
-        <Billboard position={[0, topY + 0.28, 0]}>
+        <Billboard position={[0, 0.78, 0]}>
           <mesh>
             <planeGeometry args={[barW, 0.09]} />
             <meshBasicMaterial color="#1a1008" />
