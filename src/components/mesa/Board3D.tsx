@@ -7,10 +7,14 @@
  * muda. Por isso dá pra alternar entre 2D e 3D a qualquer momento sem perder
  * nada (sincronização em tempo real, seleção, arrastar).
  */
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
 import { OrbitControls, Billboard } from "@react-three/drei";
 import * as THREE from "three";
+import { SIZE_CELLS } from "@/lib/monstros";
+import { findScenery } from "@/lib/cenario";
+import { initials } from "@/lib/dnd";
+import type { Token } from "@/lib/types";
 
 /**
  * Textura com o texto já desenhado (canvas 2D comum) — usada como rótulo do
@@ -37,10 +41,6 @@ function useLabelTexture(text: string, color: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, color]);
 }
-import { SIZE_CELLS } from "@/lib/monstros";
-import { findScenery } from "@/lib/cenario";
-import { initials } from "@/lib/dnd";
-import type { Token } from "@/lib/types";
 
 type Props = {
   cols: number;
@@ -56,12 +56,26 @@ type Props = {
 
 export function Board3D({ cols, rows, tokens, selected, activeTurnId, canControl, onSelect, onMove, onMoveEnd }: Props) {
   const dragId = useRef<string | null>(null);
+  const controlsRef = useRef<React.ComponentRef<typeof OrbitControls>>(null);
+  const [locked, setLocked] = useState(false);
   const maxSide = Math.max(cols, rows);
 
   function toGrid(point: THREE.Vector3, span: number) {
     const gx = Math.floor(point.x + cols / 2);
     const gy = Math.floor(point.z + rows / 2);
     return { x: Math.max(0, Math.min(cols - span, gx)), y: Math.max(0, Math.min(rows - span, gy)) };
+  }
+
+  // Enquanto o jogador arrasta uma peça, a câmera para de girar — sem isso o
+  // próprio gesto de arrastar também gira a mesa junto (os dois ouvem o mesmo
+  // clique do mouse), o que atrapalhava bastante colocar objetos.
+  function beginDrag(id: string) {
+    dragId.current = id;
+    if (controlsRef.current) controlsRef.current.enabled = false;
+  }
+  function endDrag() {
+    dragId.current = null;
+    if (controlsRef.current) controlsRef.current.enabled = !locked;
   }
 
   function handleGroundMove(e: ThreeEvent<PointerEvent>) {
@@ -76,12 +90,23 @@ export function Board3D({ cols, rows, tokens, selected, activeTurnId, canControl
   function handleGroundUp() {
     if (!dragId.current) return;
     const t = tokens.find((x) => x.id === dragId.current);
-    dragId.current = null;
+    endDrag();
     if (t) onMoveEnd(t.id, t.x, t.y);
+  }
+
+  function toggleLock() {
+    setLocked((v) => {
+      const next = !v;
+      if (controlsRef.current) controlsRef.current.enabled = !next;
+      return next;
+    });
   }
 
   return (
     <div className="board3d-canvas">
+      <button className="board3d-lock" onClick={toggleLock} aria-pressed={locked} title={locked ? "Destravar câmera (voltar a poder girar e dar zoom)" : "Travar câmera (fica parada, só pra organizar o mapa)"}>
+        {locked ? "🔒 Câmera travada" : "🔓 Travar câmera"}
+      </button>
       <Canvas shadows camera={{ position: [0, maxSide * 0.95, maxSide * 0.82], fov: 42 }} onPointerMissed={() => onSelect("")}>
         <Suspense fallback={null}>
           <ambientLight intensity={0.65} />
@@ -114,7 +139,7 @@ export function Board3D({ cols, rows, tokens, selected, activeTurnId, canControl
               onPointerDown: (e: ThreeEvent<PointerEvent>) => {
                 e.stopPropagation();
                 onSelect(t.id);
-                if (canControl(t)) dragId.current = t.id;
+                if (canControl(t)) beginDrag(t.id);
               },
             };
             return isScenery ? (
@@ -133,7 +158,9 @@ export function Board3D({ cols, rows, tokens, selected, activeTurnId, canControl
           })}
 
           <OrbitControls
+            ref={controlsRef}
             makeDefault
+            enabled={!locked}
             enablePan={false}
             minPolarAngle={0.35}
             maxPolarAngle={1.2}
@@ -175,6 +202,118 @@ function LabelSprite({ text, color = "#fbeed3" }: { text: string; color?: string
 
 type MeshHandlers = { onPointerDown: (e: ThreeEvent<PointerEvent>) => void };
 
+// ---------------------------------------------------------------------------
+// Miniaturas de classe: para o token de um personagem de jogador, troca o
+// cilindro genérico por uma miniatura com a silhueta da classe dele.
+// ---------------------------------------------------------------------------
+type ClassArchetype = "marcial" | "arcano" | "divino" | "furtivo";
+
+const CLASS_ARCHETYPE: Record<string, ClassArchetype> = {
+  Guerreiro: "marcial",
+  Bárbaro: "marcial",
+  Paladino: "marcial",
+  Patrulheiro: "marcial",
+  Monge: "marcial",
+  Mago: "arcano",
+  Feiticeiro: "arcano",
+  Bruxo: "arcano",
+  Clérigo: "divino",
+  Druida: "divino",
+  Ladino: "furtivo",
+  Bardo: "furtivo",
+};
+
+function PlayerMini({ color, archetype, radius }: { color: string; archetype: ClassArchetype; radius: number }) {
+  const bodyH = radius * 1.7;
+  const headY = bodyH + radius * 0.42;
+  return (
+    <group>
+      {/* Corpo: um "robe"/torso tronco-cônico — lê bem como figura em pé em qualquer classe */}
+      <mesh castShadow position={[0, bodyH / 2 + 0.13, 0]}>
+        <cylinderGeometry args={[radius * 0.52, radius * 0.82, bodyH, 16]} />
+        <meshStandardMaterial color={color} roughness={0.6} />
+      </mesh>
+      {/* Cabeça */}
+      <mesh castShadow position={[0, headY + 0.13, 0]}>
+        <sphereGeometry args={[radius * 0.4, 16, 16]} />
+        <meshStandardMaterial color="#d9a876" roughness={0.7} />
+      </mesh>
+
+      {archetype === "marcial" && (
+        <>
+          {/* Ombreiras */}
+          <mesh castShadow position={[-radius * 0.62, bodyH * 0.85 + 0.13, 0]}>
+            <sphereGeometry args={[radius * 0.22, 10, 10]} />
+            <meshStandardMaterial color="#9a9aa0" metalness={0.4} roughness={0.5} />
+          </mesh>
+          <mesh castShadow position={[radius * 0.62, bodyH * 0.85 + 0.13, 0]}>
+            <sphereGeometry args={[radius * 0.22, 10, 10]} />
+            <meshStandardMaterial color="#9a9aa0" metalness={0.4} roughness={0.5} />
+          </mesh>
+          {/* Espada às costas */}
+          <mesh castShadow position={[0, bodyH * 0.75 + 0.13, -radius * 0.55]} rotation={[0.25, 0, 0]}>
+            <boxGeometry args={[radius * 0.14, bodyH * 0.95, radius * 0.06]} />
+            <meshStandardMaterial color="#c9ccd4" metalness={0.6} roughness={0.3} />
+          </mesh>
+        </>
+      )}
+
+      {archetype === "arcano" && (
+        <>
+          {/* Chapéu pontudo */}
+          <mesh castShadow position={[0, headY + radius * 0.55 + 0.13, 0]}>
+            <coneGeometry args={[radius * 0.44, radius * 1.05, 14]} />
+            <meshStandardMaterial color={color} roughness={0.55} />
+          </mesh>
+          {/* Cajado com orbe */}
+          <mesh castShadow position={[radius * 0.8, bodyH * 0.55 + 0.13, 0]}>
+            <cylinderGeometry args={[radius * 0.05, radius * 0.05, bodyH * 1.3, 8]} />
+            <meshStandardMaterial color="#6b4a2a" />
+          </mesh>
+          <mesh position={[radius * 0.8, bodyH * 1.15 + 0.13, 0]}>
+            <sphereGeometry args={[radius * 0.16, 12, 12]} />
+            <meshStandardMaterial color="#c9a8e6" emissive="#c9a8e6" emissiveIntensity={0.9} />
+          </mesh>
+        </>
+      )}
+
+      {archetype === "divino" && (
+        <>
+          {/* Auréola/circlet */}
+          <mesh position={[0, headY + radius * 0.5 + 0.13, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[radius * 0.34, radius * 0.045, 8, 20]} />
+            <meshStandardMaterial color="#e6c987" metalness={0.5} roughness={0.3} emissive="#e6c987" emissiveIntensity={0.3} />
+          </mesh>
+          {/* Símbolo sagrado no peito */}
+          <mesh position={[0, bodyH * 0.65 + 0.13, radius * 0.72]}>
+            <circleGeometry args={[radius * 0.2, 16]} />
+            <meshStandardMaterial color="#e6c987" metalness={0.5} roughness={0.3} />
+          </mesh>
+        </>
+      )}
+
+      {archetype === "furtivo" && (
+        <>
+          {/* Capuz (cone curto cobrindo a cabeça) */}
+          <mesh castShadow position={[0, headY + radius * 0.15 + 0.13, -radius * 0.08]}>
+            <coneGeometry args={[radius * 0.46, radius * 0.6, 14]} />
+            <meshStandardMaterial color={color} roughness={0.6} />
+          </mesh>
+          {/* Duas adagas na cintura */}
+          <mesh castShadow position={[-radius * 0.55, bodyH * 0.35 + 0.13, radius * 0.3]} rotation={[0, 0, 0.5]}>
+            <boxGeometry args={[radius * 0.08, radius * 0.4, radius * 0.05]} />
+            <meshStandardMaterial color="#c9ccd4" metalness={0.6} roughness={0.3} />
+          </mesh>
+          <mesh castShadow position={[radius * 0.55, bodyH * 0.35 + 0.13, radius * 0.3]} rotation={[0, 0, -0.5]}>
+            <boxGeometry args={[radius * 0.08, radius * 0.4, radius * 0.05]} />
+            <meshStandardMaterial color="#c9ccd4" metalness={0.6} roughness={0.3} />
+          </mesh>
+        </>
+      )}
+    </group>
+  );
+}
+
 function TokenMesh3D({
   position,
   token: t,
@@ -186,6 +325,8 @@ function TokenMesh3D({
   const radius = span * 0.42;
   const hpPct = t.stats.hp_max > 0 ? Math.max(0, Math.min(1, t.stats.hp_current / t.stats.hp_max)) : 1;
   const barW = radius * 1.7;
+  const archetype = t.character_id && t.stats.classKey ? CLASS_ARCHETYPE[t.stats.classKey] : undefined;
+
   return (
     <group position={position} onPointerDown={onPointerDown}>
       {selected && (
@@ -200,15 +341,21 @@ function TokenMesh3D({
           <meshBasicMaterial color="#ffce8a" />
         </mesh>
       )}
-      <mesh castShadow position={[0, 0.13, 0]}>
-        <cylinderGeometry args={[radius, radius * 1.08, 0.26, 28]} />
-        <meshStandardMaterial color={t.color} roughness={0.55} />
-      </mesh>
-      <Billboard position={[0, 0.52, 0]}>
+
+      {archetype ? (
+        <PlayerMini color={t.color} archetype={archetype} radius={radius} />
+      ) : (
+        <mesh castShadow position={[0, 0.13, 0]}>
+          <cylinderGeometry args={[radius, radius * 1.08, 0.26, 28]} />
+          <meshStandardMaterial color={t.color} roughness={0.55} />
+        </mesh>
+      )}
+
+      <Billboard position={[0, (archetype ? radius * 2.6 : 0.5), 0]}>
         <LabelSprite text={initials(t.label)} />
       </Billboard>
       {t.stats.hp_max > 0 && (
-        <Billboard position={[0, 0.78, 0]}>
+        <Billboard position={[0, (archetype ? radius * 2.9 : 0.78), 0]}>
           <mesh>
             <planeGeometry args={[barW, 0.09]} />
             <meshBasicMaterial color="#1a1008" />
@@ -223,6 +370,11 @@ function TokenMesh3D({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Cenário: paredes/portas/cercas continuam como blocos (fica bem assim), mas
+// mesa, cadeira, cama e estante agora são modelos com várias partes, no lugar
+// de uma caixa única — proporcionais ao tamanho da casa do grid.
+// ---------------------------------------------------------------------------
 function SceneryMesh3D({
   position,
   span,
@@ -281,6 +433,134 @@ function SceneryMesh3D({
       </mesh>
     );
   }
+
+  if (sceneryId === "mesa") {
+    const top = 0.42 * span,
+      h = 0.46,
+      legR = 0.035;
+    const legs: [number, number][] = [
+      [-top * 0.42, -top * 0.42],
+      [top * 0.42, -top * 0.42],
+      [-top * 0.42, top * 0.42],
+      [top * 0.42, top * 0.42],
+    ];
+    return (
+      <group position={[x, 0, z]} onPointerDown={onPointerDown}>
+        <mesh castShadow position={[0, h, 0]}>
+          <boxGeometry args={[top * 2, 0.06, top * 2]} />
+          <meshStandardMaterial color={color} roughness={0.7} />
+        </mesh>
+        {legs.map(([lx, lz], i) => (
+          <mesh key={i} castShadow position={[lx, h / 2, lz]}>
+            <cylinderGeometry args={[legR, legR, h, 8]} />
+            <meshStandardMaterial color={color} roughness={0.7} />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+  if (sceneryId === "cadeira") {
+    const w = 0.34,
+      seatH = 0.26,
+      backH = 0.5,
+      legR = 0.025;
+    const legs: [number, number][] = [
+      [-w * 0.8, -w * 0.8],
+      [w * 0.8, -w * 0.8],
+      [-w * 0.8, w * 0.8],
+      [w * 0.8, w * 0.8],
+    ];
+    return (
+      <group position={[x, 0, z]} onPointerDown={onPointerDown}>
+        <mesh castShadow position={[0, seatH, 0]}>
+          <boxGeometry args={[w * 2, 0.05, w * 2]} />
+          <meshStandardMaterial color={color} roughness={0.75} />
+        </mesh>
+        <mesh castShadow position={[0, (seatH + backH) / 2, -w * 0.92]}>
+          <boxGeometry args={[w * 2, backH - seatH, 0.05]} />
+          <meshStandardMaterial color={color} roughness={0.75} />
+        </mesh>
+        {legs.map(([lx, lz], i) => (
+          <mesh key={i} castShadow position={[lx, seatH / 2, lz]}>
+            <cylinderGeometry args={[legR, legR, seatH, 8]} />
+            <meshStandardMaterial color={color} roughness={0.75} />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+  if (sceneryId === "cama") {
+    const w = 0.42 * span,
+      len = 0.44 * span,
+      frameH = 0.22;
+    return (
+      <group position={[x, 0, z]} onPointerDown={onPointerDown}>
+        <mesh castShadow position={[0, frameH / 2, 0]}>
+          <boxGeometry args={[w * 2, frameH, len * 2]} />
+          <meshStandardMaterial color="#6b4a2a" roughness={0.8} />
+        </mesh>
+        <mesh castShadow position={[0, frameH + 0.07, 0]}>
+          <boxGeometry args={[w * 1.9, 0.14, len * 1.9]} />
+          <meshStandardMaterial color="#e8dcc0" roughness={0.9} />
+        </mesh>
+        <mesh castShadow position={[0, frameH + 0.16, -len * 0.65]}>
+          <boxGeometry args={[w * 1.4, 0.12, len * 0.5]} />
+          <meshStandardMaterial color="#f6ecd4" roughness={0.9} />
+        </mesh>
+        <mesh castShadow position={[0, frameH * 1.6, -len * 0.98]}>
+          <boxGeometry args={[w * 2, frameH * 2.2, 0.06]} />
+          <meshStandardMaterial color="#6b4a2a" roughness={0.8} />
+        </mesh>
+      </group>
+    );
+  }
+  if (sceneryId === "bau") {
+    const w = 0.34 * span;
+    return (
+      <group position={[x, 0, z]} onPointerDown={onPointerDown}>
+        <mesh castShadow position={[0, 0.16, 0]}>
+          <boxGeometry args={[w * 2, 0.32, w * 1.3]} />
+          <meshStandardMaterial color={color} roughness={0.75} />
+        </mesh>
+        <mesh castShadow position={[0, 0.36, 0]}>
+          <cylinderGeometry args={[w * 0.65, w * 0.65, w * 1.3, 12, 1, false, 0, Math.PI]} />
+          <meshStandardMaterial color={color} roughness={0.75} />
+        </mesh>
+        <mesh position={[0, 0.2, w * 0.65]}>
+          <boxGeometry args={[0.06, 0.08, 0.03]} />
+          <meshStandardMaterial color="#c9a84a" metalness={0.6} roughness={0.35} />
+        </mesh>
+      </group>
+    );
+  }
+  if (sceneryId === "estante") {
+    const w = 0.4 * span,
+      h = 1.1,
+      d = 0.16;
+    return (
+      <group position={[x, 0, z]} onPointerDown={onPointerDown}>
+        <mesh castShadow position={[0, h / 2, -d / 2]}>
+          <boxGeometry args={[w * 2, h, 0.04]} />
+          <meshStandardMaterial color="#5a3a24" roughness={0.8} />
+        </mesh>
+        <mesh castShadow position={[-w, h / 2, 0]}>
+          <boxGeometry args={[0.04, h, d]} />
+          <meshStandardMaterial color="#5a3a24" roughness={0.8} />
+        </mesh>
+        <mesh castShadow position={[w, h / 2, 0]}>
+          <boxGeometry args={[0.04, h, d]} />
+          <meshStandardMaterial color="#5a3a24" roughness={0.8} />
+        </mesh>
+        {[0.22, 0.52, 0.82, 1.08].map((sy, i) => (
+          <mesh key={i} castShadow position={[0, sy, 0]}>
+            <boxGeometry args={[w * 2 - 0.05, 0.03, d]} />
+            <meshStandardMaterial color={color} roughness={0.8} />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+
   if (cat === "mobilia") {
     return (
       <mesh castShadow position={[x, 0.27, z]} onPointerDown={onPointerDown}>
@@ -289,7 +569,7 @@ function SceneryMesh3D({
       </mesh>
     );
   }
-  // estruturas (paredes, portas, estantes, cercas)
+  // estruturas (paredes, portas, cercas) — blocos, como já estava
   return (
     <mesh castShadow receiveShadow position={[x, 0.5, z]} onPointerDown={onPointerDown}>
       <boxGeometry args={[0.92 * span, 1, 0.92 * span]} />
