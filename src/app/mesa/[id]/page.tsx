@@ -262,6 +262,7 @@ function GameTable() {
       classKey: combat.classKey ?? undefined,
       level: combat.level,
       attacks: combat.attacks,
+      avatarUrl: char.avatar_url,
     };
   }
 

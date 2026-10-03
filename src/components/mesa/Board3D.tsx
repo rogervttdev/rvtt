@@ -9,7 +9,7 @@
  */
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
-import { OrbitControls, Billboard } from "@react-three/drei";
+import { OrbitControls, Billboard, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { SIZE_CELLS } from "@/lib/monstros";
 import { findScenery } from "@/lib/cenario";
@@ -314,6 +314,28 @@ function PlayerMini({ color, archetype, radius }: { color: string; archetype: Cl
   );
 }
 
+/**
+ * "Standee": recorte 3D com o retrato de verdade do personagem (o mesmo da
+ * ficha), em pé sobre uma baseszinha redonda e sempre virado pra câmera — é a
+ * própria arte dele, não uma forma geométrica abstrata. O mesmo truque usado
+ * por várias mesas virtuais pra miniatura de personagem.
+ */
+function StandeeMini({ url, height }: { url: string; height: number }) {
+  const texture = useTexture(url);
+  const w = (texture.image as { width?: number })?.width ?? 1;
+  const h = (texture.image as { height?: number })?.height ?? 1;
+  const planeH = height;
+  const planeW = planeH * (w / h);
+  return (
+    <Billboard position={[0, planeH / 2 + 0.03, 0]}>
+      <mesh>
+        <planeGeometry args={[planeW, planeH]} />
+        <meshBasicMaterial map={texture} transparent alphaTest={0.1} toneMapped={false} />
+      </mesh>
+    </Billboard>
+  );
+}
+
 function TokenMesh3D({
   position,
   token: t,
@@ -326,6 +348,9 @@ function TokenMesh3D({
   const hpPct = t.stats.hp_max > 0 ? Math.max(0, Math.min(1, t.stats.hp_current / t.stats.hp_max)) : 1;
   const barW = radius * 1.7;
   const archetype = t.character_id && t.stats.classKey ? CLASS_ARCHETYPE[t.stats.classKey] : undefined;
+  const hasStandee = Boolean(t.character_id && t.stats.avatarUrl);
+  const standeeH = radius * 3.6;
+  const topY = hasStandee ? standeeH + 0.12 : archetype ? radius * 2.6 : 0.5;
 
   return (
     <group position={position} onPointerDown={onPointerDown}>
@@ -342,7 +367,17 @@ function TokenMesh3D({
         </mesh>
       )}
 
-      {archetype ? (
+      {/* Base redonda — todo mundo ganha uma, igual uma miniatura de verdade */}
+      <mesh castShadow position={[0, 0.03, 0]}>
+        <cylinderGeometry args={[radius * 0.9, radius * 0.95, 0.06, 24]} />
+        <meshStandardMaterial color="#2a1c12" roughness={0.9} />
+      </mesh>
+
+      {hasStandee ? (
+        <Suspense fallback={<mesh position={[0, 0.3, 0]}><cylinderGeometry args={[radius, radius, 0.5, 16]} /><meshStandardMaterial color={t.color} /></mesh>}>
+          <StandeeMini url={t.stats.avatarUrl!} height={standeeH} />
+        </Suspense>
+      ) : archetype ? (
         <PlayerMini color={t.color} archetype={archetype} radius={radius} />
       ) : (
         <mesh castShadow position={[0, 0.13, 0]}>
@@ -351,11 +386,11 @@ function TokenMesh3D({
         </mesh>
       )}
 
-      <Billboard position={[0, (archetype ? radius * 2.6 : 0.5), 0]}>
+      <Billboard position={[0, topY, 0]}>
         <LabelSprite text={initials(t.label)} />
       </Billboard>
       {t.stats.hp_max > 0 && (
-        <Billboard position={[0, (archetype ? radius * 2.9 : 0.78), 0]}>
+        <Billboard position={[0, topY + 0.28, 0]}>
           <mesh>
             <planeGeometry args={[barW, 0.09]} />
             <meshBasicMaterial color="#1a1008" />

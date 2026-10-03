@@ -170,6 +170,8 @@ export type TokenStats = {
   /** Classe e nível do personagem vinculado (copiados na criação do token), para saber se mostra a Fúria etc. */
   classKey?: string;
   level?: number;
+  /** Retrato do personagem (igual ao da ficha) — se tiver, vira a miniatura 3D dele (um "standee") em vez da silhueta genérica da classe. */
+  avatarUrl?: string | null;
   /** Efeitos ativos agora (ex.: "rage"), visíveis a todos na mesa em tempo real. */
   active_effects?: string[];
   /** Usos gastos de Fúria desde o último descanso longo. */
